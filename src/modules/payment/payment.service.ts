@@ -3,10 +3,16 @@ import { BadRequestException, Injectable } from "@nestjs/common";
 import { UserPayload } from "@/common/guards/auth.guard";
 import QueryBuilder from "@/common/utils/queryBuilder";
 import { PaymentQueryDto } from "./dto/body.dto";
+import { StripeService } from "@/core/services/stripe/stripe.service";
+import { UserRole } from "@prisma/client";
+import config from "@/config";
 
 @Injectable()
 export class PaymentService {
-    constructor(private prisma: PrismaService) {}
+    constructor(
+        private prisma: PrismaService,
+        private stripeService: StripeService,
+    ) {}
 
     async getProducerWisePayments(user: UserPayload, query: PaymentQueryDto) {
         const queryBuilder = new QueryBuilder(
@@ -264,6 +270,158 @@ export class PaymentService {
         return {
             message: "Driver earning chart fetched successfully",
             data: summary,
+        };
+    }
+
+    async getStripeAccountStatus(user: UserPayload) {
+        let stripeAccountId: string | null = null;
+
+        if (user.role === UserRole.PRODUCER) {
+            const profile = await this.prisma.producerProfile.findUnique({
+                where: { userId: user.id },
+                select: { stripeAccountId: true },
+            });
+            stripeAccountId = profile?.stripeAccountId || null;
+        } else if (user.role === UserRole.DRIVER) {
+            const profile = await this.prisma.driverProfile.findUnique({
+                where: { userId: user.id },
+                select: { stripeAccountId: true },
+            });
+            stripeAccountId = profile?.stripeAccountId || null;
+        } else {
+            throw new BadRequestException("Role not supported for stripe payouts");
+        }
+
+        if (!stripeAccountId) {
+            return {
+                message: "Stripe account status fetched successfully",
+                data: {
+                    hasStripeAccount: false,
+                    stripeAccountId: null,
+                    detailsSubmitted: false,
+                    payoutsEnabled: false,
+                    chargesEnabled: false,
+                    isEnabled: false,
+                },
+            };
+        }
+
+        const status = await this.stripeService.getAccountStatus(stripeAccountId);
+
+        return {
+            message: "Stripe account status fetched successfully",
+            data: {
+                hasStripeAccount: true,
+                ...status,
+            },
+        };
+    }
+
+    async connectStripe(user: UserPayload, clientReturnUrl?: string) {
+        const fullUser = await this.prisma.user.findUniqueOrThrow({
+            where: { id: user.id },
+            select: { id: true, email: true, fullName: true, role: true },
+        });
+
+        let stripeAccountId: string | null = null;
+        let defaultReturnUrl = clientReturnUrl;
+
+        if (user.role === UserRole.PRODUCER) {
+            const profile = await this.prisma.producerProfile.findUnique({
+                where: { userId: user.id },
+            });
+            if (!profile) {
+                throw new BadRequestException("Producer profile not found");
+            }
+
+            if (!profile.stripeAccountId) {
+                const businessType =
+                    profile.producerType === "Company" ? "company" : "individual";
+                const account = await this.stripeService.createConnectAccount({
+                    email: fullUser.email,
+                    businessType,
+                });
+
+                await this.prisma.producerProfile.update({
+                    where: { userId: user.id },
+                    data: { stripeAccountId: account.id },
+                });
+
+                stripeAccountId = account.id;
+            } else {
+                stripeAccountId = profile.stripeAccountId;
+            }
+
+            if (!defaultReturnUrl) {
+                defaultReturnUrl = `${config.url.frontend || "http://localhost:3000"}/producer/earnings`;
+            }
+        } else if (user.role === UserRole.DRIVER) {
+            const profile = await this.prisma.driverProfile.findUnique({
+                where: { userId: user.id },
+            });
+            if (!profile) {
+                throw new BadRequestException("Driver profile not found");
+            }
+
+            if (!profile.stripeAccountId) {
+                const account = await this.stripeService.createConnectAccount({
+                    email: fullUser.email,
+                    businessType: "individual",
+                });
+
+                await this.prisma.driverProfile.update({
+                    where: { userId: user.id },
+                    data: { stripeAccountId: account.id },
+                });
+
+                stripeAccountId = account.id;
+            } else {
+                stripeAccountId = profile.stripeAccountId;
+            }
+
+            if (!defaultReturnUrl) {
+                defaultReturnUrl = `${config.url.frontend || "http://localhost:3000"}/driver/earnings`;
+            }
+        } else {
+            throw new BadRequestException("Role not supported for stripe payouts");
+        }
+
+        const cleanReturn = defaultReturnUrl.split("?")[0];
+        const refreshUrl = `${cleanReturn}?stripe_connect=refresh`;
+        const returnUrl = `${cleanReturn}?stripe_connect=complete`;
+
+        const status = await this.stripeService.getAccountStatus(stripeAccountId);
+
+        if (status.isEnabled) {
+            try {
+                const loginLink =
+                    await this.stripeService.createAccountLoginLink(stripeAccountId);
+                return {
+                    message: "Stripe dashboard link generated successfully",
+                    data: {
+                        url: loginLink.url,
+                        stripeAccountId,
+                        alreadyEnabled: true,
+                    },
+                };
+            } catch {
+                // Fallback to onboarding link
+            }
+        }
+
+        const accountLink = await this.stripeService.createAccountLink({
+            accountId: stripeAccountId,
+            refreshUrl,
+            returnUrl,
+        });
+
+        return {
+            message: "Stripe onboarding link generated successfully",
+            data: {
+                url: accountLink.url,
+                stripeAccountId,
+                alreadyEnabled: false,
+            },
         };
     }
 }

@@ -3,7 +3,7 @@ import { JwtModule } from "@nestjs/jwt";
 import { Module } from "@nestjs/common";
 import { PaymentService } from "./payment.service";
 import { PaymentController } from "./payment.controller";
-
+import { StripeService } from "@/core/services/stripe/stripe.service";
 
 @Module({
     imports: [
@@ -13,7 +13,7 @@ import { PaymentController } from "./payment.controller";
         }),
         JwtModule.register({ global: true }),
     ],
-    providers: [PaymentService],
+    providers: [PaymentService, StripeService],
     controllers: [PaymentController],
     exports: [PaymentService],
 })

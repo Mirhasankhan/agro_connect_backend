@@ -143,4 +143,70 @@ export class StripeService {
 
         return this.stripe.webhooks.constructEvent(payload, sig, webhookSecret);
     }
+
+    async createConnectAccount({
+        email,
+        country = "US",
+        businessType = "individual",
+    }: {
+        email: string;
+        country?: string;
+        businessType?: "individual" | "company";
+    }) {
+        return await this.stripe.accounts.create({
+            type: "express",
+            country,
+            email,
+            capabilities: {
+                transfers: { requested: true },
+            },
+            business_type: businessType,
+        });
+    }
+
+    async createAccountLink({
+        accountId,
+        refreshUrl,
+        returnUrl,
+    }: {
+        accountId: string;
+        refreshUrl: string;
+        returnUrl: string;
+    }) {
+        return await this.stripe.accountLinks.create({
+            account: accountId,
+            refresh_url: refreshUrl,
+            return_url: returnUrl,
+            type: "account_onboarding",
+        });
+    }
+
+    async getAccountStatus(accountId: string) {
+        try {
+            const account = await this.stripe.accounts.retrieve(accountId);
+            const isEnabled = Boolean(
+                account.payouts_enabled && account.details_submitted,
+            );
+            return {
+                accountId: account.id,
+                detailsSubmitted: account.details_submitted ?? false,
+                payoutsEnabled: account.payouts_enabled ?? false,
+                chargesEnabled: account.charges_enabled ?? false,
+                isEnabled,
+            };
+        } catch (error) {
+            return {
+                accountId,
+                detailsSubmitted: false,
+                payoutsEnabled: false,
+                chargesEnabled: false,
+                isEnabled: false,
+                error: (error as Error).message,
+            };
+        }
+    }
+
+    async createAccountLoginLink(accountId: string) {
+        return await this.stripe.accounts.createLoginLink(accountId);
+    }
 }

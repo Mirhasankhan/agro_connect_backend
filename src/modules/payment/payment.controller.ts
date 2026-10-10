@@ -1,4 +1,4 @@
-import { Controller, Get, Query, Req } from "@nestjs/common";
+import { Body, Controller, Get, HttpStatus, Post, Query, Req } from "@nestjs/common";
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
 import { PaymentService } from "./payment.service";
 import { Roles } from "@/common/decorators/roles.decorator";
@@ -6,7 +6,6 @@ import { UserRole } from "@prisma/client";
 import { UserPayload } from "@/common/guards/auth.guard";
 import { ResponseService } from "@/common/interceptors/response";
 import { Request } from "express";
-import { HttpStatus } from "@nestjs/common";
 import { PaymentQueryDto } from "./dto/body.dto";
 
 @ApiTags("Payment")
@@ -83,6 +82,41 @@ export class PaymentController {
             user,
             type,
         );
+
+        return ResponseService.formatResponse({
+            statusCode: HttpStatus.OK,
+            message: result.message,
+            data: result.data,
+        });
+    }
+
+    @Get("stripe-account-status")
+    @Roles(UserRole.PRODUCER, UserRole.DRIVER)
+    @ApiOperation({
+        summary: "Check if producer or driver Stripe account is connected and enabled",
+    })
+    async getStripeAccountStatus(@Req() req: Request) {
+        const user = req.user as UserPayload;
+        const result = await this.paymentService.getStripeAccountStatus(user);
+
+        return ResponseService.formatResponse({
+            statusCode: HttpStatus.OK,
+            message: result.message,
+            data: result.data,
+        });
+    }
+
+    @Post("connect-stripe")
+    @Roles(UserRole.PRODUCER, UserRole.DRIVER)
+    @ApiOperation({
+        summary: "Connect with Stripe or complete Stripe onboarding",
+    })
+    async connectStripe(
+        @Req() req: Request,
+        @Body("returnUrl") returnUrl?: string,
+    ) {
+        const user = req.user as UserPayload;
+        const result = await this.paymentService.connectStripe(user, returnUrl);
 
         return ResponseService.formatResponse({
             statusCode: HttpStatus.OK,
