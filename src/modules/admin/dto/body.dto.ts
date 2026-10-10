@@ -1,5 +1,6 @@
 import {
     DriverVehicleType,
+    OrderStatus,
     ProducerType,
     VerificationStatus,
 } from "@prisma/client";
@@ -75,3 +76,4 @@ export class AssignDriverDto {
     @IsMongoId()
     driverId: string;
 }
+

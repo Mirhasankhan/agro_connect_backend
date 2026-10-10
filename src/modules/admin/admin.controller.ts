@@ -21,15 +21,17 @@ import {
     DriverQueryDto,
     ProducerQueryDto,
     AssignDriverDto,
+    BaseUserQueryDto,
 } from "./dto/body.dto";
 import { CustomFileInterceptor } from "@/common/interceptors/file_interceptors";
 import { ParseFormDataInterceptor } from "@/common/interceptors/form_data_interceptor";
 import { IsPublic } from "@/common/decorators/auth.decorator";
+import { OrderQueryDto } from "../order/dto/body.dto";
 
 @ApiTags("Admin")
 @Controller("admin")
 export class AdminController {
-    constructor(private adminService: AdminService) {}
+    constructor(private adminService: AdminService) { }
 
     @Get("all-producers")
     @ApiOperation({ summary: "All producers" })
@@ -43,6 +45,21 @@ export class AdminController {
             data: result.data,
         });
     }
+
+
+    @Get("producer-details/:id")
+    @ApiOperation({ summary: "Producer details" })
+    @Roles(UserRole.ADMIN)
+    async producerDetails(@Param("id") id: string) {
+        const result = await this.adminService.getProducerDetailsFromDB(id);
+
+        return ResponseService.formatResponse({
+            statusCode: HttpStatus.OK,
+            message: result.message,
+            data: result.data,
+        });
+    }
+
 
     @Patch("producer-approval")
     @ApiOperation({ summary: "Accept/reject producer account" })
@@ -70,6 +87,21 @@ export class AdminController {
         });
     }
 
+
+    @Get("driver-details/:id")
+    @ApiOperation({ summary: "Driver details" })
+    @Roles(UserRole.ADMIN)
+    async driverDetails(@Param("id") id: string) {
+        const result = await this.adminService.getDriverDetailsFromDB(id);
+
+        return ResponseService.formatResponse({
+            statusCode: HttpStatus.OK,
+            message: result.message,
+            data: result.data,
+        });
+    }
+
+
     @Patch("driver-approval")
     @ApiOperation({ summary: "Accept/reject driver account" })
     @Roles(UserRole.ADMIN)
@@ -82,6 +114,35 @@ export class AdminController {
             message: result.message,
         });
     }
+
+    @Get("all-buyers")
+    @ApiOperation({ summary: "All buyers" })
+    @Roles(UserRole.ADMIN)
+    async allBuyers(@Query() query: BaseUserQueryDto) {
+        const result = await this.adminService.getAllBuyerFromDB(query);
+
+        return ResponseService.formatResponse({
+            statusCode: HttpStatus.OK,
+            message: result.message,
+            data: result.data,
+        });
+    }
+
+
+
+    @Get("buyer-details/:id")
+    @ApiOperation({ summary: "Buyer details" })
+    @Roles(UserRole.ADMIN)
+    async buyerDetails(@Param("id") id: string) {
+        const result = await this.adminService.getBuyerDetailsFromDB(id);
+
+        return ResponseService.formatResponse({
+            statusCode: HttpStatus.OK,
+            message: result.message,
+            data: result.data,
+        });
+    }
+
 
     @Post("create-category")
     @ApiOperation({ summary: "Create new category" })
@@ -127,6 +188,20 @@ export class AdminController {
             message: result.message,
         });
     }
+
+    @Get("all-orders")
+    @ApiOperation({ summary: "All orders" })
+    @Roles(UserRole.ADMIN)
+    async allOrders(@Query() query: OrderQueryDto) {
+        const result = await this.adminService.getAllOrdersFromDB(query);
+
+        return ResponseService.formatResponse({
+            statusCode: HttpStatus.OK,
+            message: result.message,
+            data: result.data,
+        });
+    }
+
 
     @IsPublic()
     @Post("assign-driver")

@@ -8,16 +8,18 @@ import {
     DriverQueryDto,
     ProducerQueryDto,
     AssignDriverDto,
+    BaseUserQueryDto,
 } from "./dto/body.dto";
 import { ApiError } from "@/common/errors/api_error";
 import { FileService } from "@/core/services/files/cloudinary.service";
+import { OrderQueryDto } from "../order/dto/body.dto";
 
 @Injectable()
 export class AdminService {
     constructor(
         private prisma: PrismaService,
         private fileService: FileService,
-    ) {}
+    ) { }
 
     async getAllProducerFromDB(query: ProducerQueryDto) {
         const queryBuilder = new QueryBuilder(this.prisma.user, query);
@@ -39,6 +41,7 @@ export class AdminService {
             .sort()
             .paginate()
             .select({
+                id: true,
                 fullName: true,
                 email: true,
                 profileImage: true,
@@ -57,11 +60,112 @@ export class AdminService {
 
         return {
             data: {
-                users: allProducer,
+                producers: allProducer,
                 meta: pagination,
             },
             message: "All producer fetched successfully",
         };
+    }
+
+    async getProducerDetailsFromDB(producerId: string) {
+        const producer = await this.prisma.user.findUniqueOrThrow({
+            where: {
+                id: producerId,
+                role: UserRole.PRODUCER,
+            },
+            select: {
+                id: true,
+                fullName: true,
+                email: true,
+                profileImage: true,
+                address: true,
+                city: true,
+                region: true,
+                phoneNumber: true,
+                producerProfile: {
+                    omit: {
+                        userId: true,
+                        updatedAt: true,
+                        stripeAccountId: true,
+                    }
+                },
+                products: {
+                    select: {
+                        id: true,
+                        name: true,
+                        imageUrls: true,
+                        availableQuantity: true,
+                        avgRating: true,
+                        totalReviews: true,
+                        pricePerUnit: true,
+                        sellingUnit: true,
+                        sold: true,
+                        description: true,
+                        reviews: {
+                            select: {
+                                rating: true,
+                                comment: true,
+                                createdAt: true,
+                                buyer: {
+                                    select: {
+                                        fullName: true,
+                                        profileImage: true,
+                                    }
+                                }
+                            }
+                        },
+                        category: {
+                            select: {
+                                name: true,
+                            }
+                        },
+                        _count: {
+                            select: {
+                                orderItems: true
+                            }
+                        },
+                        pricingTiers: {
+                            select: {
+                                quantity: true,
+                                pricePerUnit: true,
+
+                            }
+                        },
+                        orderItems: {
+                            select: {
+                                quantity: true,
+                                subtotal: true,
+                                unitPrice: true,
+                                status: true,
+
+                            }
+                        }
+                    }
+                },
+                producerEarnings: {
+                    select: {
+                        amount: true,
+                        isTransferred: true,
+                        paidAt: true,
+                        createdAt: true,
+                        orderItem: {
+                            select: {
+                                productName: true,
+                                sellingUnit: true,
+                                quantity: true,
+                            }
+                        }
+                    }
+                }
+            },
+        })
+
+        return {
+            data: {
+                producer,
+            },
+            message: "Producer details fetched successfully",
+        }
     }
 
     async acceptRejectProducerAccount(payload: AcceptRejectAccountDto) {
@@ -112,6 +216,7 @@ export class AdminService {
             .sort()
             .paginate()
             .select({
+                id: true,
                 fullName: true,
                 email: true,
                 profileImage: true,
@@ -130,12 +235,90 @@ export class AdminService {
 
         return {
             data: {
-                users: allDriver,
+                drivers: allDriver,
                 meta: pagination,
             },
             message: "All driver fetched successfully",
         };
     }
+
+    async getDriverDetailsFromDB(driverId: string) {
+        const driver = await this.prisma.user.findUniqueOrThrow({
+            where: {
+                id: driverId,
+                role: UserRole.DRIVER
+            },
+            select: {
+                id: true,
+                fullName: true,
+                email: true,
+                profileImage: true,
+                city: true,
+                address: true,
+                region: true,
+                phoneNumber: true,
+                status: true,
+                driverProfile: {
+                    omit: {
+                        userId: true,
+                        updatedAt: true,
+                        stripeAccountId: true,
+                    }
+                },
+                deliveries: {
+                    select: {
+                        id: true,
+                        status: true,
+                        order: {
+                            select: {
+                                orderId: true,
+                                totalAmount: true,
+                                shippingAddress: {
+                                    select: {
+                                        addressLine: true,
+                                        city: true,
+                                        postCode: true,
+                                        instruction: true,
+                                    }
+                                },
+                                items: {
+                                    select: {
+                                        productName: true,
+                                        sellingUnit: true,
+                                        quantity: true,
+                                        subtotal: true,
+                                        unitPrice: true
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                driverEarnings: {
+                    select: {
+                        amount: true,
+                        isTransferred: true,
+                        paidAt: true,
+                        createdAt: true,
+                        order: {
+                            select: {
+                                orderId: true,
+                                deliveryCharge: true
+                            }
+                        }
+                    }
+                }
+            }
+        })
+
+        return {
+            message: "Driver details fetched successfully",
+            data: {
+                driver
+            }
+        }
+    }
+
 
     async acceptRejectDriverAccount(payload: AcceptRejectAccountDto) {
         await this.prisma.driverProfile.findUniqueOrThrow({
@@ -163,6 +346,101 @@ export class AdminService {
         return {
             message: `${payload.isAccept ? "Accepted" : "Rejected"} driver account successfully`,
         };
+    }
+
+    async getAllBuyerFromDB(query: BaseUserQueryDto) {
+        const queryBuilder = new QueryBuilder(this.prisma.user, query);
+
+        const response = queryBuilder
+            .search(["email", "fullName"])
+            .rawFilter({
+                role: {
+                    equals: UserRole.BUYER,
+                },
+            })
+            .sort()
+            .paginate()
+            .select({
+                id: true,
+                fullName: true,
+                email: true,
+                city: true,
+                address: true,
+                region: true,
+                profileImage: true,
+                status: true,
+                phoneNumber: true,
+                _count: {
+                    select: {
+                        orders: true
+                    }
+                }
+            });
+
+        const [allBuyer, pagination] = await Promise.all([
+            response.execute(),
+            response.countTotal(),
+        ]);
+
+        return {
+            data: {
+                buyers: allBuyer,
+                meta: pagination,
+            },
+            message: "All buyer fetched successfully",
+        };
+    }
+
+    async getBuyerDetailsFromDB(buyerId: string) {
+        const buyer = await this.prisma.user.findUniqueOrThrow({
+            where: {
+                id: buyerId,
+                role: UserRole.BUYER
+            },
+            select: {
+                id: true,
+                fullName: true,
+                email: true,
+                profileImage: true,
+                city: true,
+                address: true,
+                region: true,
+                phoneNumber: true,
+                status: true,
+                shippingAddresses: {
+                    omit: {
+                        createdAt: true,
+                        updatedAt: true,
+                        userId: true,
+                        id: true,
+                    }
+                },
+                orders: {
+                    select: {
+                        id: true,
+                        status: true,
+                        totalAmount: true,
+                        createdAt: true,
+                        items: {
+                            select: {
+                                productName: true,
+                                sellingUnit: true,
+                                quantity: true,
+                                subtotal: true,
+                                unitPrice: true
+                            }
+                        }
+                    }
+                }
+            }
+        })
+
+        return {
+            data: {
+                buyer
+            },
+            message: "Buyer details fetched successfully",
+        }
     }
 
     async createNewCategory(payload: CategoryDto, file?: Express.Multer.File) {
@@ -242,6 +520,58 @@ export class AdminService {
 
         return {
             message: `Category ${category.isActive ? "Deactived" : "Actived"} successfully`,
+        };
+    }
+
+    async getAllOrdersFromDB(query: OrderQueryDto) {
+        const queryBuilder = new QueryBuilder(this.prisma.order, query);
+
+        const response = queryBuilder
+            .search(["product.name", "orderId"])
+            .filter({
+                exacts: ["status"],
+            })
+            .rawFilter({
+                paymentStatus: "Paid"
+            })
+            .sort()
+            .paginate()
+            .select({
+                id: true,
+                totalAmount: true,
+                createdAt: true,
+                orderId: true,
+                _count: {
+                    select: {
+                        items: true,
+                    }
+                },
+                customer: {
+                    select: {
+                        fullName: true,
+                        profileImage: true
+                    }
+                },
+                shippingAddress: {
+                    select: {
+                        addressLine: true,
+                        city: true
+                    }
+                }
+
+            });
+
+        const [allOrders, pagination] = await Promise.all([
+            response.execute(),
+            response.countTotal(),
+        ]);
+
+        return {
+            data: {
+                orders: allOrders,
+                meta: pagination,
+            },
+            message: "All orders fetched successfully",
         };
     }
 
@@ -346,4 +676,6 @@ export class AdminService {
             message: "Driver assigned to delivery successfully",
         };
     }
+
+
 }
