@@ -324,6 +324,81 @@ export class OrderService {
         };
     }
 
+    async getOrderItemDetailsForProducer(user: UserPayload, orderItemId: string) {
+        const orderItem = await this.prisma.orderItem.findUniqueOrThrow({
+            where: {
+                id: orderItemId,
+                product: {
+                    producerId: user.id,
+                },
+            },
+            select: {
+                id: true,
+                productName: true,
+                createdAt: true,
+                sellingUnit: true,
+                quantity: true,
+                subtotal: true,
+                unitPrice: true,
+                isReviewed: true,
+                status: true,
+                product: {
+                    select: {
+                        imageUrls: true,
+                    },
+                },
+                review: {
+                    select: {
+                        id: true,
+                        rating: true,
+                        comment: true,
+                        createdAt: true
+                    },
+                },
+                order: {
+                    select: {
+                        orderId: true,
+                        customer: {
+                            select: {
+                                fullName: true,
+                                profileImage: true,
+                                city: true,
+                                address: true,
+                            },
+                        },
+                        deliveries: {
+                            select: {
+                                status: true,
+                                createdAt: true,
+                                updatedAt: true,
+                                driver: {
+                                    select: {
+                                        fullName: true,
+                                        address: true,
+                                        profileImage: true,
+                                        driverProfile: {
+                                            select: {
+                                                id: true,
+                                                vehicleType: true,
+                                                registrationNumber: true
+                                            }
+                                        }
+
+                                    }
+                                }
+                            }
+                        }
+                    },
+                },
+            },
+        });
+
+        return {
+            message: "Order item details fetched successfully",
+            data: orderItem,
+        };
+    }
+
     async getOrderById(user: UserPayload, orderId: string) {
         const order = await this.prisma.order.findUniqueOrThrow({
             where: {
@@ -371,7 +446,7 @@ export class OrderService {
                         quantity: true,
                         unitPrice: true,
                         subtotal: true,
-                        isReviewed:true,
+                        isReviewed: true,
                         sellingUnit: true,
                         product: {
                             select: {

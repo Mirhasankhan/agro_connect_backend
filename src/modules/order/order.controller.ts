@@ -66,6 +66,20 @@ export class OrderController {
         });
     }
 
+    @Get("item/details/:id")
+    @Roles(UserRole.PRODUCER)
+    @ApiOperation({ summary: "Get order item details for producer" })
+    async getOrderItemDetailsForProducer(@Req() req: Request, @Param("id") orderItemId: string) {
+        const user = req.user as UserPayload;
+        const result = await this.orderService.getOrderItemDetailsForProducer(user, orderItemId);
+        return ResponseService.formatResponse({
+            statusCode: HttpStatus.OK,
+            message: result.message,
+            data: result.data,
+        });
+    }
+
+
     @Get("details/:id")
     @Roles(UserRole.BUYER)
     @ApiOperation({ summary: "Get order by ID" })
