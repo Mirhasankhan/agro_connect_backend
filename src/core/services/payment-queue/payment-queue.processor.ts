@@ -6,6 +6,8 @@ import {
     EARNINGS_QUEUE,
     TransferJobData,
 } from "./payment-queue.service";
+import { ApiError } from "@/common/errors/api_error";
+import { HttpStatus } from "@nestjs/common";
 
 @Processor(EARNINGS_QUEUE)
 export class PaymentQueueProcessor extends WorkerHost {
@@ -35,22 +37,23 @@ export class PaymentQueueProcessor extends WorkerHost {
         });
 
         if (!earning || earning.isTransferred || earning.orderItem.report) return;
-        const accountId = earning.producer.producerProfile?.stripeAccountId;
-        if (!accountId) {
-            throw new Error(`Producer ${earning.producerId} has no Stripe account`);
-        }
 
-        const transfer = await this.stripe.createTransfer({
-            amount: earning.amount,
-            destination: accountId,
-            idempotencyKey: `producer-earning-${earning.id}`,
-        });
+        // const accountId = earning.producer.producerProfile?.stripeAccountId;
+        // if (!accountId) {
+        //     throw new ApiError(HttpStatus.BAD_REQUEST, `Producer ${earning.producerId} has no Stripe account`);
+        // }
+
+        // const transfer = await this.stripe.createTransfer({
+        //     amount: earning.amount,
+        //     destination: accountId,
+        //     idempotencyKey: `producer-earning-${earning.id}`,
+        // });
         
         await this.prisma.producerEarning.updateMany({
             where: { id: earning.id, isTransferred: false },
             data: {
                 isTransferred: true,
-                stripeTransferId: transfer.id,
+                stripeTransferId: "transfer.id",
                 paidAt: new Date(),
             },
         });
@@ -77,21 +80,23 @@ export class PaymentQueueProcessor extends WorkerHost {
         ) {
             return;
         }
-        const accountId = earning.driver.driverProfile?.stripeAccountId;
-        if (!accountId) {
-            throw new Error(`Driver ${earning.driverId} has no Stripe account`);
-        }
 
-        const transfer = await this.stripe.createTransfer({
-            amount: earning.amount,
-            destination: accountId,
-            idempotencyKey: `driver-earning-${earning.id}`,
-        });
+        // const accountId = earning.driver.driverProfile?.stripeAccountId;
+        // if (!accountId) {
+        //     throw new ApiError(HttpStatus.BAD_REQUEST, `Driver ${earning.driverId} has no Stripe account`);
+        // }
+
+        // const transfer = await this.stripe.createTransfer({
+        //     amount: earning.amount,
+        //     destination: accountId,
+        //     idempotencyKey: `driver-earning-${earning.id}`,
+        // });
+
         await this.prisma.driverEarning.updateMany({
             where: { id: earning.id, isTransferred: false },
             data: {
                 isTransferred: true,
-                stripeTransferId: transfer.id,
+                stripeTransferId: "transfer.id",
                 paidAt: new Date(),
             },
         });

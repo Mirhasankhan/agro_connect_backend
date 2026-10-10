@@ -1,5 +1,5 @@
 import { PrismaService } from "@/core/services/prisma/prisma.service";
-import { Logger } from "@nestjs/common";
+import { HttpStatus, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
 import {
@@ -16,6 +16,7 @@ import { UserRole } from "@prisma/client";
 import { Server, Socket } from "socket.io";
 import config from "@/config";
 import { SocketPresenceService } from "./socket.presence.service";
+import { ApiError } from "@/common/errors/api_error";
 
 type SubscribePayload = {
     userId: string;
@@ -34,8 +35,7 @@ type MessagePayload = {
     perMessageDeflate: false,
 })
 export class WebsocketGateway
-    implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
-{
+    implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
     @WebSocketServer()
     server: Server;
 
@@ -45,7 +45,7 @@ export class WebsocketGateway
         private readonly configService: ConfigService,
         private readonly jwtService: JwtService,
         private readonly presence: SocketPresenceService,
-    ) {}
+    ) { }
 
     afterInit(server: Server) {
         server.use(async (socket: Socket, next: (err?: Error) => void) => {
@@ -191,9 +191,9 @@ export class WebsocketGateway
                     ...conversationDetails,
                     participant: participant
                         ? {
-                              ...participant,
-                              isOnline: this.presence.isOnline(participant.id),
-                          }
+                            ...participant,
+                            isOnline: this.presence.isOnline(participant.id),
+                        }
                         : null,
                 },
                 messages: messages.map(({ senderId, ...message }) => ({
@@ -375,14 +375,14 @@ export class WebsocketGateway
             otherUser.deleted ||
             !this.isAllowedConversation(otherUser.role)
         ) {
-            throw new Error("User is not available for messaging");
+            throw new ApiError(HttpStatus.NOT_FOUND, "User is not available for messaging");
         }
 
         if (
             !currentUser ||
             !this.isAllowedConversationPair(currentUser.role, otherUser.role)
         ) {
-            throw new Error(
+            throw new ApiError(HttpStatus.FORBIDDEN,
                 "Only buyer-producer and buyer-driver conversations are allowed",
             );
         }
