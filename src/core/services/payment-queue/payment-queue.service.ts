@@ -3,7 +3,8 @@ import { Injectable } from "@nestjs/common";
 import {  Queue } from "bullmq";
 
 export const EARNINGS_QUEUE = "earnings-transfers";
-export const TRANSFER_DELAY = 24 * 60 * 60 * 1000;
+// export const TRANSFER_DELAY = 24 * 60 * 60 * 1000;
+export const TRANSFER_DELAY = 2 * 60 * 1000; // 2 minutes
 
 export type TransferJobData =
     | { type: "producer"; earningId: string }
@@ -36,6 +37,7 @@ export class PaymentQueueService {
         type: TransferJobData["type"],
         earningId: string,
     ) {
+        console.log("added in queue")
         await this.queue.add(
             `${type}-transfer`,
             { type, earningId },

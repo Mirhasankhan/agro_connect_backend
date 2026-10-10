@@ -25,6 +25,7 @@ export class PaymentQueueProcessor extends WorkerHost {
     }
 
     private async transferProducer(earningId: string) {
+        console.log("came producer here");
         const earning = await this.prisma.producerEarning.findUnique({
             where: { id: earningId },
             include: {
@@ -56,6 +57,7 @@ export class PaymentQueueProcessor extends WorkerHost {
     }
 
     private async transferDriver(earningId: string) {
+        console.log("came driver here")
         const earning = await this.prisma.driverEarning.findUnique({
             where: { id: earningId },
             include: {
