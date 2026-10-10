@@ -657,71 +657,85 @@ export class OrderService {
             throw new ApiError(HttpStatus.FORBIDDEN, "Incorrect OTP");
         }
 
-        const earnings = await this.prisma.$transaction(async (transaction) => {
-            await transaction.delivery.update({
-                where: {
-                    id: payload.deliveryId,
-                },
-                data: {
-                    status: "Delivered",
-                },
-            });
+        const earnings = await this.prisma.$transaction(
+            async (transaction) => {
+                await Promise.all([
+                    transaction.delivery.update({
+                        where: {
+                            id: payload.deliveryId,
+                        },
+                        data: {
+                            status: "Delivered",
+                        },
+                    }),
+                    transaction.driverProfile.update({
+                        where: {
+                            userId: user.id,
+                        },
+                        data: {
+                            isAvailable: true,
+                        },
+                    }),
+                    transaction.order.update({
+                        where: {
+                            id: delivery.order.id,
+                            status: "Active",
+                        },
+                        data: {
+                            status: "Delivered",
+                        },
+                    }),
+                ]);
 
-            await transaction.driverProfile.update({
-                where: {
-                    userId: user.id,
-                },
-                data: {
-                    isAvailable: true,
-                },
-            });
+                const producerEarnings = await Promise.all(
+                    delivery.order.items.map(async (item) => {
+                        await transaction.orderItem.update({
+                            where: {
+                                id: item.id,
+                            },
+                            data: {
+                                status: "Delivered",
+                            },
+                        });
+                        return transaction.producerEarning.create({
+                            data: {
+                                producerId: item.product.producerId,
+                                orderItemId: item.id,
+                                amount: item.subtotal * 0.9, // Assuming 10% platform fee
+                            },
+                        });
+                    }),
+                );
 
-            await transaction.order.update({
-                where: {
-                    id: delivery.order.id,
-                    status: "Active",
-                },
-                data: {
-                    status: "Delivered",
-                },
-            });
-
-            const producerEarnings = [];
-            for (const item of delivery.order.items) {
-                await transaction.orderItem.update({
-                    where: {
-                        id: item.id,
-                    },
+                const driverEarning = await transaction.driverEarning.create({
                     data: {
-                        status: "Delivered",
+                        driverId: user.id,
+                        orderId: delivery.order.id,
+                        amount: delivery.order.deliveryCharge,
                     },
                 });
-                const earning = await transaction.producerEarning.create({
-                    data: {
-                        producerId: item.product.producerId,
-                        orderItemId: item.id,
-                        amount: item.subtotal * 0.9, // Assuming 10% platform fee
-                    },
-                });
-                producerEarnings.push(earning);
-            }
 
-            const driverEarning = await transaction.driverEarning.create({
-                data: {
-                    driverId: user.id,
-                    orderId: delivery.order.id,
-                    amount: delivery.order.deliveryCharge,
-                },
-            });
-            return { producerEarnings, driverEarning };
-        });
+                return { producerEarnings, driverEarning };
+            },
+            {
+                maxWait: 10000,
+                timeout: 30000,
+            },
+        );
 
-        await Promise.all([
-            ...earnings.producerEarnings.map((earning) =>
-                this.paymentQueue.scheduleProducerTransfer(earning.id),
-            ),
-            this.paymentQueue.scheduleDriverTransfer(earnings.driverEarning.id),
-        ]);
+        try {
+            await Promise.all([
+                ...earnings.producerEarnings.map((earning) =>
+                    this.paymentQueue.scheduleProducerTransfer(earning.id),
+                ),
+                this.paymentQueue.scheduleDriverTransfer(earnings.driverEarning.id),
+            ]);
+        } catch (queueError) {
+            console.error(
+                "Warning: Failed to enqueue payment queue transfer jobs:",
+                queueError,
+            );
+        }
 
         return {
             message: "Delivery marked as completed successfully",
