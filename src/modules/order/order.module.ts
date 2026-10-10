@@ -11,7 +11,7 @@ import { PaymentQueueModule } from "@/core/services/payment-queue/payment-queue.
     imports: [
         PaymentQueueModule,
         HttpModule.register({
-            timeout: 5000,
+            timeout: 15000,
             maxRedirects: 5,
         }),
         JwtModule.register({ global: true }),
