@@ -319,7 +319,6 @@ export class AdminService {
         }
     }
 
-
     async acceptRejectDriverAccount(payload: AcceptRejectAccountDto) {
         await this.prisma.driverProfile.findUniqueOrThrow({
             where: {
