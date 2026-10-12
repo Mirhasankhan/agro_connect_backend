@@ -23,6 +23,7 @@ import { UserPayload } from "@/common/guards/auth.guard";
 import { background } from "@/common/utils/background";
 import sendEmail from "@/core/services/email";
 import { FileService } from "@/core/services/files/cloudinary.service";
+import { UserRole } from "@prisma/client";
 
 @Injectable()
 export class AuthService {
@@ -31,7 +32,7 @@ export class AuthService {
         private bcryptService: BcryptService,
         private prisma: PrismaService,
         private fileService: FileService,
-    ) { }
+    ) {}
 
     async register(payload: RegisterUserDto) {
         const userData = await this.prisma.user.findUnique({
@@ -232,6 +233,48 @@ export class AuthService {
                     profileImage: userData.profileImage,
                     isSetupCompleted: userData.isSetupCompleted,
                 },
+            },
+        };
+    }
+
+    async adminLogin(payload: LoginUserDto) {
+        const adminData = await this.prisma.user.findUnique({
+            where: {
+                email: payload.email,
+                role: UserRole.ADMIN,
+            },
+        });
+
+        if (!adminData) {
+            throw new ApiError(HttpStatus.UNAUTHORIZED, "Invalid Credentials");
+        }
+
+        const passwordMatched = await this.bcryptService.compare(
+            payload.password,
+            adminData.password,
+        );
+
+        if (!passwordMatched) {
+            throw new ApiError(HttpStatus.UNAUTHORIZED, "Invalid Credentials");
+        }
+
+        const jwtPayload = {
+            id: adminData.id,
+            email: adminData.email,
+            role: adminData.role,
+            fullName: adminData.fullName,
+        } satisfies UserPayload;
+
+        const accessToken = this.jwtService.sign(jwtPayload, {
+            secret: config.jwt.jwt_secret,
+            expiresIn: config.jwt.jwt_secret_expires_in,
+        });
+
+        return {
+            message: "Login successful",
+            data: {
+                accessToken,
+                role: adminData.role,
             },
         };
     }
@@ -681,7 +724,7 @@ export class AuthService {
             );
         }
 
-        const { address, city, region, phoneNumber, ...rest } = payload
+        const { address, city, region, phoneNumber, ...rest } = payload;
 
         await this.prisma.driverProfile.create({
             data: {

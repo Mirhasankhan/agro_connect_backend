@@ -82,6 +82,19 @@ export class AuthController {
     }
 
     @IsPublic()
+    @Post("admin-login")
+    @ApiOperation({ summary: "Login Admin" })
+    async adminLogin(@Body() payload: LoginUserDto) {
+        const result = await this.authService.adminLogin(payload);
+
+        return ResponseService.formatResponse({
+            statusCode: HttpStatus.OK,
+            message: result.message,
+            data: result.data,
+        });
+    }
+
+    @IsPublic()
     @Post("send-otp/password-reset")
     @ApiOperation({ summary: "Forgot Password OTP" })
     async sendForgotPasswordOtp(@Body() payload: SendForgotPasswordOtpDto) {
