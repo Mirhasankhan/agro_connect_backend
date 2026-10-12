@@ -554,6 +554,12 @@ export class AdminService {
                         profileImage: true
                     }
                 },
+                deliveries: {
+                    select: {
+                        id: true,
+                        status: true,
+                    },
+                },
                 shippingAddress: {
                     select: {
                         addressLine: true,
