@@ -202,6 +202,19 @@ export class AdminController {
         });
     }
 
+    @Get("order-details/:id")
+    @ApiOperation({ summary: "Order details" })
+    @Roles(UserRole.ADMIN)
+    async orderDetails(@Param("id") id: string) {
+        const result = await this.adminService.getOrderDetailsFromDB(id);
+
+        return ResponseService.formatResponse({
+            statusCode: HttpStatus.OK,
+            message: result.message,
+            data: result.data,
+        });
+    }
+
 
     @IsPublic()
     @Post("assign-driver")

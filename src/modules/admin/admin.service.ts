@@ -539,6 +539,9 @@ export class AdminService {
             .select({
                 id: true,
                 totalAmount: true,
+                deliveryCharge: true,
+                status: true,
+                paymentStatus: true,
                 createdAt: true,
                 orderId: true,
                 _count: {
@@ -677,5 +680,141 @@ export class AdminService {
         };
     }
 
+    async getOrderDetailsFromDB(orderId: string) {
+        const order = await this.prisma.order.findUniqueOrThrow({
+            where: {
+                id: orderId,
+            },
+            select: {
+                id: true,
+                orderId: true,
+                totalAmount: true,
+                deliveryCharge: true,
+                status: true,
+                paymentStatus: true,
+                stripePaymentIntentId: true,
+                cancelReason: true,
+                createdAt: true,
+                updatedAt: true,
+                customer: {
+                    select: {
+                        id: true,
+                        fullName: true,
+                        email: true,
+                        phoneNumber: true,
+                        profileImage: true,
+                        city: true,
+                        address: true,
+                        region: true,
+                    },
+                },
+                shippingAddress: {
+                    select: {
+                        id: true,
+                        addressLine: true,
+                        city: true,
+                        postCode: true,
+                        instruction: true,
+                    },
+                },
+                deliveries: {
+                    select: {
+                        id: true,
+                        status: true,
+                        latitude: true,
+                        longitude: true,
+                        createdAt: true,
+                        updatedAt: true,
+                        driver: {
+                            select: {
+                                id: true,
+                                fullName: true,
+                                email: true,
+                                phoneNumber: true,
+                                profileImage: true,
+                                driverProfile: {
+                                    select: {
+                                        vehicleType: true,
+                                        registrationNumber: true,
+                                        drivingLicenseUrl: true,
+                                        isAvailable: true,
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+                items: {
+                    select: {
+                        id: true,
+                        productName: true,
+                        sellingUnit: true,
+                        quantity: true,
+                        unitPrice: true,
+                        subtotal: true,
+                        status: true,
+                        cancelReason: true,
+                        isReviewed: true,
+                        createdAt: true,
+                        product: {
+                            select: {
+                                id: true,
+                                name: true,
+                                imageUrls: true,
+                                description: true,
+                                category: {
+                                    select: {
+                                        name: true,
+                                    },
+                                },
+                                producer: {
+                                    select: {
+                                        id: true,
+                                        fullName: true,
+                                        email: true,
+                                        phoneNumber: true,
+                                        profileImage: true,
+                                        producerProfile: {
+                                            select: {
+                                                farmName: true,
+                                                farmSize: true,
+                                                producerType: true,
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                        producerEarning: {
+                            select: {
+                                amount: true,
+                                isTransferred: true,
+                                paidAt: true,
+                            },
+                        },
+                        review: {
+                            select: {
+                                rating: true,
+                                comment: true,
+                            },
+                        },
+                    },
+                },
+                driverEarning: {
+                    select: {
+                        amount: true,
+                        isTransferred: true,
+                        paidAt: true,
+                    },
+                },
+            },
+        });
 
+        return {
+            data: {
+                order,
+            },
+            message: "Order details fetched successfully",
+        };
+    }
 }
