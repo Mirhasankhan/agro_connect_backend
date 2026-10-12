@@ -22,6 +22,7 @@ import {
     ProducerQueryDto,
     AssignDriverDto,
     BaseUserQueryDto,
+    EarningQueryDto,
 } from "./dto/body.dto";
 import { CustomFileInterceptor } from "@/common/interceptors/file_interceptors";
 import { ParseFormDataInterceptor } from "@/common/interceptors/form_data_interceptor";
@@ -31,7 +32,7 @@ import { OrderQueryDto } from "../order/dto/body.dto";
 @ApiTags("Admin")
 @Controller("admin")
 export class AdminController {
-    constructor(private adminService: AdminService) { }
+    constructor(private adminService: AdminService) {}
 
     @Get("all-producers")
     @ApiOperation({ summary: "All producers" })
@@ -46,7 +47,6 @@ export class AdminController {
         });
     }
 
-
     @Get("producer-details/:id")
     @ApiOperation({ summary: "Producer details" })
     @Roles(UserRole.ADMIN)
@@ -59,7 +59,6 @@ export class AdminController {
             data: result.data,
         });
     }
-
 
     @Patch("producer-approval")
     @ApiOperation({ summary: "Accept/reject producer account" })
@@ -87,7 +86,6 @@ export class AdminController {
         });
     }
 
-
     @Get("driver-details/:id")
     @ApiOperation({ summary: "Driver details" })
     @Roles(UserRole.ADMIN)
@@ -100,7 +98,6 @@ export class AdminController {
             data: result.data,
         });
     }
-
 
     @Patch("driver-approval")
     @ApiOperation({ summary: "Accept/reject driver account" })
@@ -128,8 +125,6 @@ export class AdminController {
         });
     }
 
-
-
     @Get("buyer-details/:id")
     @ApiOperation({ summary: "Buyer details" })
     @Roles(UserRole.ADMIN)
@@ -142,7 +137,6 @@ export class AdminController {
             data: result.data,
         });
     }
-
 
     @Post("create-category")
     @ApiOperation({ summary: "Create new category" })
@@ -215,7 +209,6 @@ export class AdminController {
         });
     }
 
-
     @IsPublic()
     @Post("assign-driver")
     @ApiOperation({ summary: "Assign driver to delivery" })
@@ -226,6 +219,32 @@ export class AdminController {
         return ResponseService.formatResponse({
             statusCode: HttpStatus.OK,
             message: result.message,
+        });
+    }
+
+    @Get("all-producer-earnings")
+    @ApiOperation({ summary: "All producer earnings" })
+    @Roles(UserRole.ADMIN)
+    async allProducerEarnings(@Query() query: EarningQueryDto) {
+        const result = await this.adminService.getAllProducerEarnings(query);
+
+        return ResponseService.formatResponse({
+            statusCode: HttpStatus.OK,
+            message: result.message,
+            data: result.data,
+        });
+    }
+
+    @Get("all-driver-earnings")
+    @ApiOperation({ summary: "All driver earnings" })
+    @Roles(UserRole.ADMIN)
+    async allDriverEarnings(@Query() query: EarningQueryDto) {
+        const result = await this.adminService.getAllDriverEarnings(query);
+
+        return ResponseService.formatResponse({
+            statusCode: HttpStatus.OK,
+            message: result.message,
+            data: result.data,
         });
     }
 }

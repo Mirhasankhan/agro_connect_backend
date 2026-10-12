@@ -10,6 +10,7 @@ import {
     IsString,
     IsMongoId,
     IsEnum,
+    IsIn,
 } from "class-validator";
 
 export class AcceptRejectAccountDto {
@@ -75,5 +76,27 @@ export class AssignDriverDto {
 
     @IsMongoId()
     driverId: string;
+}
+
+export class EarningQueryDto {
+    @IsOptional()
+    @IsString()
+    search?: string;
+
+    @IsOptional()
+    @IsIn(["true", "false"])
+    isTransferred?: string;
+
+    @IsOptional()
+    @IsEnum(["asc", "desc"])
+    order?: "asc" | "desc";
+
+    @IsOptional()
+    @IsString()
+    page?: string;
+
+    @IsOptional()
+    @IsString()
+    limit?: string;
 }
 
