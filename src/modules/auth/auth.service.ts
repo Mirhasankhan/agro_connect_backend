@@ -782,7 +782,7 @@ export class AuthService {
             profileImage = await this.fileService.uploadToCloudinary(file);
         }
 
-        await this.prisma.user.update({
+        const updatedUser = await this.prisma.user.update({
             where: {
                 id: user.id,
             },
@@ -794,10 +794,23 @@ export class AuthService {
                 region: payload.region ?? userData.region,
                 address: payload.address ?? userData.address,
             },
+            select: {
+                id: true,
+                fullName: true,
+                email: true,
+                profileImage: true,
+                role: true,
+                status: true,
+                address: true,
+                city: true,
+                region: true,
+                phoneNumber: true,
+            },
         });
 
         return {
             message: "Profile updated successfully",
+            data: updatedUser,
         };
     }
 

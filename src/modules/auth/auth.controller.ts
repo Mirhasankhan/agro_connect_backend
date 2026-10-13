@@ -245,7 +245,7 @@ export class AuthController {
     }
 
     @Put("update-profile")
-    @Roles(UserRole.DRIVER, UserRole.PRODUCER, UserRole.BUYER)
+    @Roles(UserRole.DRIVER, UserRole.PRODUCER, UserRole.BUYER, UserRole.ADMIN)
     @UseInterceptors(
         CustomFileInterceptor("profileImage"),
         ParseFormDataInterceptor,
@@ -266,11 +266,12 @@ export class AuthController {
         return ResponseService.formatResponse({
             statusCode: HttpStatus.OK,
             message: result.message,
+            data: result.data,
         });
     }
 
     @Get("profile")
-    @Roles(UserRole.DRIVER, UserRole.PRODUCER, UserRole.BUYER)
+    @Roles(UserRole.DRIVER, UserRole.PRODUCER, UserRole.BUYER, UserRole.ADMIN)
     @ApiOperation({ summary: "Get user Profile" })
     async getUserProfile(@Req() req: Request) {
         const user = req.user as UserPayload;

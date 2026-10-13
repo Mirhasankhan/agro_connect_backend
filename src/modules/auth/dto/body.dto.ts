@@ -42,7 +42,7 @@ export class updateUserDto {
     fullName?: string;
 
     @IsOptional()
-    @IsPhoneNumber()
+    @IsString()
     phoneNumber?: string;
 
     @IsOptional()
