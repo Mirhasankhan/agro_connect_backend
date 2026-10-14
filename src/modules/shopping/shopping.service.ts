@@ -289,4 +289,127 @@ export class ShoppingService {
         };
     }
 
+    async getTopRatedProducers() {
+        const ratedProducts = await this.prisma.product.findMany({
+            where: {
+                avgRating: {
+                    gt: 0,
+                },
+                producer: {
+                    role: "PRODUCER",
+                },
+            },
+            select: {
+                producerId: true,
+                avgRating: true,
+                producer: {
+                    select: {
+                        fullName: true,
+                        profileImage: true,
+                        producerProfile: {
+                            select: {
+                                farmLocation: true,
+                            },
+                        },
+                        _count: {
+                            select: {
+                                products: true,
+                            },
+                        },
+                    },
+                },
+            },
+        });
+
+        const producerRatings = new Map<
+            string,
+            {
+                fullName: string;
+                profileImage: string | null;
+                farmLocation: string | null;
+                totalProductCount: number;
+                ratingTotal: number;
+                ratedProductCount: number;
+            }
+        >();
+
+        for (const product of ratedProducts) {
+            const existing = producerRatings.get(product.producerId);
+            if (existing) {
+                existing.ratingTotal += product.avgRating;
+                existing.ratedProductCount += 1;
+                continue;
+            }
+
+            producerRatings.set(product.producerId, {
+                fullName: product.producer.fullName,
+                profileImage: product.producer.profileImage,
+                farmLocation: product.producer.producerProfile?.farmLocation ?? null,
+                totalProductCount: product.producer._count.products,
+                ratingTotal: product.avgRating,
+                ratedProductCount: 1,
+            });
+        }
+
+        const topRatedProducers = [...producerRatings.entries()]
+            .map(([producerId, producer]) => ({
+                producerId,
+                ...producer,
+                avgRating: producer.ratingTotal / producer.ratedProductCount,
+            }))
+            .sort((first, second) => second.avgRating - first.avgRating)
+            .slice(0, 4);
+
+        const producerIds = topRatedProducers.map(({ producerId }) => producerId);
+        const orderItems = producerIds.length
+            ? await this.prisma.orderItem.findMany({
+                  where: {
+                      product: {
+                          producerId: {
+                              in: producerIds,
+                          },
+                      },
+                  },
+                  select: {
+                      orderId: true,
+                      product: {
+                          select: {
+                              producerId: true,
+                          },
+                      },
+                  },
+              })
+            : [];
+
+        const ordersByProducer = new Map<string, Set<string>>();
+        for (const orderItem of orderItems) {
+            const producerOrders =
+                ordersByProducer.get(orderItem.product.producerId) ?? new Set<string>();
+            producerOrders.add(orderItem.orderId);
+            ordersByProducer.set(orderItem.product.producerId, producerOrders);
+        }
+
+        return {
+            message: "Top rated producers retrieved successfully",
+            data: topRatedProducers.map(
+                ({
+                    producerId,
+                    fullName,
+                    profileImage,
+                    farmLocation,
+                    totalProductCount,
+                    avgRating,
+                }) => ({
+                    producerId,
+                    fullName,
+                    profileImage,
+                    farmLocation,
+                    totalOrders: ordersByProducer.get(producerId)?.size ?? 0,
+                    avgRating,
+                    totalProductCount,
+                }),
+            ),
+        };
+    }
+
 }

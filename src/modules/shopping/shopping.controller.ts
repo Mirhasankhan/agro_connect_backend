@@ -17,11 +17,12 @@ import { Roles } from "@/common/decorators/roles.decorator";
 import { UserRole } from "@prisma/client";
 import { ShoppingService } from "./shopping.service";
 import { CartDto, UpdateCartDto } from "./dto/body.dto";
+import { IsPublic } from "@/common/decorators/auth.decorator";
 
 @ApiTags("Shopping")
 @Controller("shopping")
 export class ShoppingController {
-    constructor(private shoppingService: ShoppingService) { }
+    constructor(private shoppingService: ShoppingService) {}
 
     @Post("add-cart")
     @Roles(UserRole.BUYER)
@@ -87,7 +88,10 @@ export class ShoppingController {
     @Post("add-wishlist/:id")
     @Roles(UserRole.BUYER)
     @ApiOperation({ summary: "Add or Remove Product to Wishlist" })
-    async addRemoveProductToWishlist(@Param("id") id: string, @Req() req: Request) {
+    async addRemoveProductToWishlist(
+        @Param("id") id: string,
+        @Req() req: Request,
+    ) {
         const result = await this.shoppingService.addRemoveProductToWishlist(
             req.user as UserPayload,
             id,
@@ -112,5 +116,15 @@ export class ShoppingController {
         });
     }
 
-
+    @Get("top-rated-producers")
+    @IsPublic()
+    @ApiOperation({ summary: "Get top-rated producers" })
+    async getTopRatedProducers() {
+        const result = await this.shoppingService.getTopRatedProducers();
+        return ResponseService.formatResponse({
+            statusCode: HttpStatus.OK,
+            message: result.message,
+            data: result.data,
+        });
+    }
 }
