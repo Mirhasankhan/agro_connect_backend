@@ -308,7 +308,9 @@ export class ShoppingService {
                         profileImage: true,
                         producerProfile: {
                             select: {
+                                farmName: true,
                                 farmLocation: true,
+                                farmPhotoUrl: true,
                             },
                         },
                         _count: {
@@ -326,7 +328,9 @@ export class ShoppingService {
             {
                 fullName: string;
                 profileImage: string | null;
+                farmName: string | null;
                 farmLocation: string | null;
+                farmPhotoUrl: string | null;
                 totalProductCount: number;
                 ratingTotal: number;
                 ratedProductCount: number;
@@ -344,7 +348,9 @@ export class ShoppingService {
             producerRatings.set(product.producerId, {
                 fullName: product.producer.fullName,
                 profileImage: product.producer.profileImage,
+                farmName: product.producer.producerProfile?.farmName ?? null,
                 farmLocation: product.producer.producerProfile?.farmLocation ?? null,
+                farmPhotoUrl: product.producer.producerProfile?.farmPhotoUrl ?? null,
                 totalProductCount: product.producer._count.products,
                 ratingTotal: product.avgRating,
                 ratedProductCount: 1,
@@ -396,14 +402,18 @@ export class ShoppingService {
                     producerId,
                     fullName,
                     profileImage,
+                    farmName,
                     farmLocation,
+                    farmPhotoUrl,
                     totalProductCount,
                     avgRating,
                 }) => ({
                     producerId,
                     fullName,
                     profileImage,
+                    farmName,
                     farmLocation,
+                    farmPhotoUrl,
                     totalOrders: ordersByProducer.get(producerId)?.size ?? 0,
                     avgRating,
                     totalProductCount,
