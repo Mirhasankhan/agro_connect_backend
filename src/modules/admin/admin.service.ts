@@ -10,6 +10,8 @@ import {
     AssignDriverDto,
     BaseUserQueryDto,
     EarningQueryDto,
+    ReportQueryDto,
+    ResolveReportDto,
 } from "./dto/body.dto";
 import { ApiError } from "@/common/errors/api_error";
 import { FileService } from "@/core/services/files/cloudinary.service";
@@ -803,6 +805,16 @@ export class AdminService {
                                 comment: true,
                             },
                         },
+                        report: {
+                            select: {
+                                id: true,
+                                reason: true,
+                                fileUrl: true,
+                                status: true,
+                                adminComment: true,
+                                createdAt: true,
+                            },
+                        },
                     },
                 },
                 driverEarning: {
@@ -1134,5 +1146,295 @@ export class AdminService {
         return {
             message: "Driver earning transferred successfully",
         };
+    }
+
+    async getAllReportsFromDB(query: ReportQueryDto) {
+        const queryBuilder = new QueryBuilder(this.prisma.report, query);
+
+        const response = queryBuilder
+            .search([
+                "reason",
+                "buyer.fullName",
+                "buyer.email",
+                "orderItem.productName",
+            ])
+            .filter({
+                exacts: ["status"],
+            })
+            .sort()
+            .paginate()
+            .select({
+                id: true,
+                reason: true,
+                fileUrl: true,
+                adminComment: true,
+                status: true,
+                createdAt: true,
+                updatedAt: true,
+                buyer: {
+                    select: {
+                        id: true,
+                        fullName: true,
+                        email: true,
+                        phoneNumber: true,
+                        profileImage: true,
+                    },
+                },
+                orderItem: {
+                    select: {
+                        id: true,
+                        productName: true,
+                        sellingUnit: true,
+                        quantity: true,
+                        unitPrice: true,
+                        subtotal: true,
+                        status: true,
+                        order: {
+                            select: {
+                                id: true,
+                                orderId: true,
+                                status: true,
+                                paymentStatus: true,
+                                totalAmount: true,
+                                createdAt: true,
+                            },
+                        },
+                        product: {
+                            select: {
+                                id: true,
+                                name: true,
+                                imageUrls: true,
+                                producer: {
+                                    select: {
+                                        id: true,
+                                        fullName: true,
+                                        email: true,
+                                        phoneNumber: true,
+                                        profileImage: true,
+                                        producerProfile: {
+                                            select: {
+                                                farmName: true,
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                        producerEarning: {
+                            select: {
+                                id: true,
+                                amount: true,
+                                isTransferred: true,
+                                paidAt: true,
+                            },
+                        },
+                    },
+                },
+            });
+
+        const [allReports, pagination] = await Promise.all([
+            response.execute(),
+            response.countTotal(),
+        ]);
+
+        return {
+            message: "All reports fetched successfully",
+            data: {
+                reports: allReports,
+                meta: pagination,
+            },
+        };
+    }
+
+    async getReportDetailsFromDB(reportId: string) {
+        const report = await this.prisma.report.findUniqueOrThrow({
+            where: { id: reportId },
+            select: {
+                id: true,
+                reason: true,
+                fileUrl: true,
+                adminComment: true,
+                status: true,
+                createdAt: true,
+                updatedAt: true,
+                buyer: {
+                    select: {
+                        id: true,
+                        fullName: true,
+                        email: true,
+                        phoneNumber: true,
+                        profileImage: true,
+                        address: true,
+                        city: true,
+                    },
+                },
+                orderItem: {
+                    select: {
+                        id: true,
+                        productName: true,
+                        sellingUnit: true,
+                        quantity: true,
+                        unitPrice: true,
+                        subtotal: true,
+                        status: true,
+                        order: {
+                            select: {
+                                id: true,
+                                orderId: true,
+                                status: true,
+                                paymentStatus: true,
+                                totalAmount: true,
+                                createdAt: true,
+                                shippingAddress: {
+                                    select: {
+                                        addressLine: true,
+                                        city: true,
+                                        postCode: true,
+                                    },
+                                },
+                            },
+                        },
+                        product: {
+                            select: {
+                                id: true,
+                                name: true,
+                                imageUrls: true,
+                                producer: {
+                                    select: {
+                                        id: true,
+                                        fullName: true,
+                                        email: true,
+                                        phoneNumber: true,
+                                        profileImage: true,
+                                        producerProfile: {
+                                            select: {
+                                                farmName: true,
+                                                farmLocation: true,
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                        producerEarning: {
+                            select: {
+                                id: true,
+                                amount: true,
+                                isTransferred: true,
+                                paidAt: true,
+                            },
+                        },
+                    },
+                },
+            },
+        });
+
+        return {
+            message: "Report details fetched successfully",
+            data: {
+                report,
+            },
+        };
+    }
+
+    async resolveOrRejectReport(
+        reportId: string,
+        payload: ResolveReportDto,
+    ) {
+        const report = await this.prisma.report.findUnique({
+            where: { id: reportId },
+            include: {
+                orderItem: {
+                    include: {
+                        order: {
+                            include: {
+                                items: true,
+                            },
+                        },
+                        producerEarning: true,
+                    },
+                },
+            },
+        });
+
+        if (!report) {
+            throw new ApiError(HttpStatus.NOT_FOUND, "Report not found");
+        }
+
+        if (report.status !== "Pending") {
+            throw new ApiError(
+                HttpStatus.BAD_REQUEST,
+                `Report has already been ${report.status.toLowerCase()}`,
+            );
+        }
+
+        if (payload.status === "Resolved") {
+            await this.prisma.$transaction(async (tx) => {
+                await tx.report.update({
+                    where: { id: reportId },
+                    data: {
+                        status: "Resolved",
+                        adminComment: payload.adminComment,
+                    },
+                });
+
+                await tx.orderItem.update({
+                    where: { id: report.orderItemId },
+                    data: {
+                        status: "Refunded",
+                    },
+                });
+
+                const otherItems = report.orderItem.order.items.filter(
+                    (it) => it.id !== report.orderItemId,
+                );
+                const allRefundedOrCancelled =
+                    otherItems.length === 0 ||
+                    otherItems.every(
+                        (it) =>
+                            it.status === "Refunded" ||
+                            it.status === "Cancelled",
+                    );
+
+                await tx.order.update({
+                    where: { id: report.orderItem.orderId },
+                    data: {
+                        paymentStatus: allRefundedOrCancelled
+                            ? "Refunded"
+                            : "PartiallyRefunded",
+                        status: allRefundedOrCancelled ? "Refunded" : undefined,
+                    },
+                });
+            });
+
+            if (report.orderItem.order.stripePaymentIntentId) {
+                try {
+                    await this.stripe.refundPaymentIntent(
+                        report.orderItem.order.stripePaymentIntentId,
+                        `report-refund-${report.id}`,
+                    );
+                } catch (stripeErr) {
+                    console.error("Warning: Stripe refund skipped or already processed:", stripeErr);
+                }
+            }
+
+            return {
+                message: "Report resolved and item marked as refunded successfully",
+            };
+        } else if (payload.status === "Rejected") {
+            await this.prisma.report.update({
+                where: { id: reportId },
+                data: {
+                    status: "Rejected",
+                    adminComment: payload.adminComment,
+                },
+            });
+
+            return {
+                message: "Report rejected and claim dismissed successfully",
+            };
+        } else {
+            throw new ApiError(HttpStatus.BAD_REQUEST, "Invalid report status");
+        }
     }
 }

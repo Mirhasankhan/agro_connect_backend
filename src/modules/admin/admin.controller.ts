@@ -23,6 +23,8 @@ import {
     AssignDriverDto,
     BaseUserQueryDto,
     EarningQueryDto,
+    ReportQueryDto,
+    ResolveReportDto,
 } from "./dto/body.dto";
 import { CustomFileInterceptor } from "@/common/interceptors/file_interceptors";
 import { ParseFormDataInterceptor } from "@/common/interceptors/form_data_interceptor";
@@ -266,6 +268,50 @@ export class AdminController {
     @Roles(UserRole.ADMIN)
     async transferDriverEarning(@Param("id") id: string) {
         const result = await this.adminService.transferDriverEarningManually(id);
+
+        return ResponseService.formatResponse({
+            statusCode: HttpStatus.OK,
+            message: result.message,
+        });
+    }
+
+    @Get("all-reports")
+    @ApiOperation({ summary: "All reported orders and customer disputes" })
+    @Roles(UserRole.ADMIN)
+    async allReports(@Query() query: ReportQueryDto) {
+        const result = await this.adminService.getAllReportsFromDB(query);
+
+        return ResponseService.formatResponse({
+            statusCode: HttpStatus.OK,
+            message: result.message,
+            data: result.data,
+        });
+    }
+
+    @Get("report-details/:id")
+    @ApiOperation({ summary: "Report details" })
+    @Roles(UserRole.ADMIN)
+    async reportDetails(@Param("id") id: string) {
+        const result = await this.adminService.getReportDetailsFromDB(id);
+
+        return ResponseService.formatResponse({
+            statusCode: HttpStatus.OK,
+            message: result.message,
+            data: result.data,
+        });
+    }
+
+    @Patch("resolve-report/:id")
+    @ApiOperation({ summary: "Resolve or reject report dispute" })
+    @Roles(UserRole.ADMIN)
+    async resolveReport(
+        @Param("id") id: string,
+        @Body() payload: ResolveReportDto,
+    ) {
+        const result = await this.adminService.resolveOrRejectReport(
+            id,
+            payload,
+        );
 
         return ResponseService.formatResponse({
             statusCode: HttpStatus.OK,

@@ -26,7 +26,7 @@ async function bootstrap() {
 
     // --- CORS ---
     app.enableCors({
-        origin: ["http://localhost:3000", "https://agro-connect-cyan.vercel.app", "https://agro-connect-dashboard.vercel.app"], 
+        origin: ["http://localhost:3000", "http://localhost:3001","https://agro-connect-cyan.vercel.app", "https://agro-connect-dashboard.vercel.app"], 
         credentials: true,
         methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
         allowedHeaders: [

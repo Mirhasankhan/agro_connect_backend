@@ -41,6 +41,14 @@ export class PaymentService {
                         sellingUnit: true,
                         unitPrice: true,
                         subtotal: true,
+                        report: {
+                            select: {
+                                id: true,
+                                status: true,
+                                reason: true,
+                                adminComment: true,
+                            },
+                        },
                     },
                 },
             });
@@ -50,8 +58,8 @@ export class PaymentService {
             response.countTotal(),
         ]);
 
-        const earningSummary = await this.prisma.driverEarning.aggregate({
-            where: { driverId: user.id },
+        const earningSummary = await this.prisma.producerEarning.aggregate({
+            where: { producerId: user.id },
             _sum: {
                 amount: true,
             },

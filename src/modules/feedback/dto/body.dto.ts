@@ -1,4 +1,4 @@
-import { IsMongoId, IsNumber, IsString, Max, Min } from "class-validator";
+import { IsMongoId, IsNumber, IsOptional, IsString, Max, Min } from "class-validator";
 
 export class CreateReviewDto {
     @IsNumber()
@@ -19,4 +19,8 @@ export class CreateReportDto {
 
     @IsString()
     reason: string;
+
+    @IsOptional()
+    @IsString()
+    fileUrl?: string;
 }

@@ -18,6 +18,7 @@ import { Roles } from "@/common/decorators/roles.decorator";
 import { UserRole } from "@prisma/client";
 import { OrderService } from "./order.service";
 import { ConfirmDeliveryDto, CreateOrderDto, DeliveryDto, OrderQueryDto } from "./dto/body.dto";
+import { ReportQueryDto } from "../admin/dto/body.dto";
 
 @ApiTags("Order")
 @Controller("order")
@@ -72,6 +73,19 @@ export class OrderController {
     async getOrderItemDetailsForProducer(@Req() req: Request, @Param("id") orderItemId: string) {
         const user = req.user as UserPayload;
         const result = await this.orderService.getOrderItemDetailsForProducer(user, orderItemId);
+        return ResponseService.formatResponse({
+            statusCode: HttpStatus.OK,
+            message: result.message,
+            data: result.data,
+        });
+    }
+
+    @Get("producer/reports")
+    @Roles(UserRole.PRODUCER)
+    @ApiOperation({ summary: "Get producer's reported items" })
+    async getProducerReports(@Req() req: Request, @Query() query: ReportQueryDto) {
+        const user = req.user as UserPayload;
+        const result = await this.orderService.getProducerReports(user, query);
         return ResponseService.formatResponse({
             statusCode: HttpStatus.OK,
             message: result.message,

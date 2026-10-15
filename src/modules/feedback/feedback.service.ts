@@ -22,14 +22,37 @@ export class FeedbackService {
                 select: {
                     id: true,
                     orderId: true,
-                    producerEarning: { select: { id: true } },
+                    status: true,
+                    updatedAt: true,
+                    report: { select: { id: true } },
+                    producerEarning: { select: { id: true, createdAt: true } },
                 },
             });
 
             if (!orderItem) {
                 throw new ApiError(
                     HttpStatus.BAD_REQUEST,
-                    "Invalid order item",
+                    "Invalid order item or order is not delivered",
+                );
+            }
+
+            if (orderItem.report) {
+                throw new ApiError(
+                    HttpStatus.BAD_REQUEST,
+                    "A report has already been submitted for this order item",
+                );
+            }
+
+            const deliveryTime =
+                orderItem.producerEarning?.createdAt || orderItem.updatedAt;
+            const diffHours =
+                (Date.now() - new Date(deliveryTime).getTime()) /
+                (1000 * 60 * 60);
+
+            if (diffHours > 24) {
+                throw new ApiError(
+                    HttpStatus.BAD_REQUEST,
+                    "Reports can only be submitted within 24 hours after delivery",
                 );
             }
 
@@ -38,6 +61,7 @@ export class FeedbackService {
                     buyerId: user.id,
                     orderItemId: orderItem.id,
                     reason: payload.reason,
+                    fileUrl: payload.fileUrl,
                 },
             });
 

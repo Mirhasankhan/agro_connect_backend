@@ -2,6 +2,7 @@ import {
     DriverVehicleType,
     OrderStatus,
     ProducerType,
+    ReportStatus,
     VerificationStatus,
 } from "@prisma/client";
 import {
@@ -100,3 +101,33 @@ export class EarningQueryDto {
     limit?: string;
 }
 
+export class ReportQueryDto {
+    @IsOptional()
+    @IsString()
+    search?: string;
+
+    @IsOptional()
+    @IsEnum(ReportStatus)
+    status?: ReportStatus;
+
+    @IsOptional()
+    @IsEnum(["asc", "desc"])
+    order?: "asc" | "desc";
+
+    @IsOptional()
+    @IsString()
+    page?: string;
+
+    @IsOptional()
+    @IsString()
+    limit?: string;
+}
+
+export class ResolveReportDto {
+    @IsEnum(ReportStatus)
+    status: ReportStatus;
+
+    @IsOptional()
+    @IsString()
+    adminComment?: string;
+}
