@@ -96,6 +96,7 @@ export class ProductService {
             .search(["name", "description"])
             .filter({
                 exacts: ["categoryId", "sellingUnit"],
+                booleans: ["isFeatured"],
             })
             .rawFilter({
                 isActive: true,
@@ -120,10 +121,12 @@ export class ProductService {
                 id: true,
                 name: true,
                 pricePerUnit: true,
+                sellingUnit: true,
                 imageUrls: true,
                 availableQuantity: true,
                 avgRating: true,
                 totalReviews: true,
+                isFeatured: true,
                 _count: {
                     select: {
                         pricingTiers: true,

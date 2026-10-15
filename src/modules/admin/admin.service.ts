@@ -549,6 +549,37 @@ export class AdminService {
         };
     }
 
+    async toggleProductFeatured(productId: string) {
+        const product = await this.prisma.product.findUniqueOrThrow({
+            where: {
+                id: productId,
+            },
+            select: {
+                id: true,
+                isFeatured: true,
+            },
+        });
+
+        const updated = await this.prisma.product.update({
+            where: {
+                id: productId,
+            },
+            data: {
+                isFeatured: !product.isFeatured,
+            },
+            select: {
+                id: true,
+                isFeatured: true,
+            },
+        });
+
+        return {
+            message: `Product ${updated.isFeatured ? "marked as featured" : "removed from featured"} successfully`,
+            data: updated,
+        };
+    }
+
+
     async getAllOrdersFromDB(query: OrderQueryDto) {
         const queryBuilder = new QueryBuilder(this.prisma.order, query);
 
@@ -713,7 +744,7 @@ export class AdminService {
             await this.notificationService.createNotification({
                 receiverId: payload.driverId,
                 title: `New Delivery Assigned`,
-                content: `New delivery assigned to you by the admin. Please review the details and accept the delivery. Or`,
+                content: `New delivery assigned to you by the admin. Please review the details and accept the delivery.`,
                 notificationType: "Order",
             });
 

@@ -96,6 +96,10 @@ export class ProductQueryDto {
 
     @IsOptional()
     @IsString()
+    isFeatured?: string;
+
+    @IsOptional()
+    @IsString()
     page?: string;
 
     @IsOptional()

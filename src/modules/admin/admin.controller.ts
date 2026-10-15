@@ -185,6 +185,19 @@ export class AdminController {
         });
     }
 
+    @Patch("toggle-product-featured/:id")
+    @ApiOperation({ summary: "Toggle product featured status" })
+    @Roles(UserRole.ADMIN)
+    async toggleProductFeatured(@Param("id") id: string) {
+        const result = await this.adminService.toggleProductFeatured(id);
+
+        return ResponseService.formatResponse({
+            statusCode: HttpStatus.OK,
+            message: result.message,
+            data: result.data,
+        });
+    }
+
     @Get("all-orders")
     @ApiOperation({ summary: "All orders" })
     @Roles(UserRole.ADMIN)
