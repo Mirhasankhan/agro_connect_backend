@@ -32,7 +32,7 @@ export class AuthService {
         private bcryptService: BcryptService,
         private prisma: PrismaService,
         private fileService: FileService,
-    ) {}
+    ) { }
 
     async register(payload: RegisterUserDto) {
         const userData = await this.prisma.user.findUnique({
@@ -838,6 +838,53 @@ export class AuthService {
         return {
             message: "User profile fetched successfully",
             data: userData,
+        };
+    }
+
+    async toggleOnlineStatus(user: UserPayload) {
+        const [driver, deliveries] = await this.prisma.$transaction([
+            this.prisma.driverProfile.findUniqueOrThrow({
+                where: {
+                    userId: user.id,
+                },
+                select: {
+                    isAvailable: true,
+                },
+            }),
+            this.prisma.delivery.findFirst({
+                where: {
+                    driverId: user.id,
+                    status: {
+                        in: ["Assigned", "PickedUp"],
+                    },
+                },
+            }),
+        ]);
+
+        const nextStatus = !driver.isAvailable;
+
+        if (!nextStatus && deliveries) {
+            throw new ApiError(
+                HttpStatus.BAD_REQUEST,
+                "Cannot go offline while having active deliveries",
+            );
+        }
+
+        const updatedDriver = await this.prisma.driverProfile.update({
+            where: {
+                userId: user.id,
+            },
+            data: {
+                isAvailable: nextStatus,
+            },
+            select: {
+                isAvailable: true,
+            },
+        });
+
+        return {
+            message: `You are now ${nextStatus ? "online" : "offline"}`,
+            data: updatedDriver,
         };
     }
 }

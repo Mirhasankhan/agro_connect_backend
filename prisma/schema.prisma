@@ -155,7 +155,7 @@ model DriverProfile {
   // Verification
   verificationStatus VerificationStatus @default(Pending)
   rejectionReason    String?
-  isAvailable        Boolean            @default(false)
+  isAvailable        Boolean            @default(true)
   stripeAccountId    String?
 
   createdAt DateTime @default(now())

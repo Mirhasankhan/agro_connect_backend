@@ -4,6 +4,7 @@ import {
     Get,
     HttpCode,
     HttpStatus,
+    Patch,
     Post,
     Put,
     Req,
@@ -276,6 +277,20 @@ export class AuthController {
     async getUserProfile(@Req() req: Request) {
         const user = req.user as UserPayload;
         const result = await this.authService.getUserProfile(user);
+
+        return ResponseService.formatResponse({
+            statusCode: HttpStatus.OK,
+            message: result.message,
+            data: result.data,
+        });
+    }
+
+    @Patch("availability")
+    @Roles(UserRole.DRIVER)
+    @ApiOperation({ summary: "Toggle Driver Availability" })
+    async toggleDriverAvailability(@Req() req: Request) {
+        const user = req.user as UserPayload;
+        const result = await this.authService.toggleOnlineStatus(user);
 
         return ResponseService.formatResponse({
             statusCode: HttpStatus.OK,
