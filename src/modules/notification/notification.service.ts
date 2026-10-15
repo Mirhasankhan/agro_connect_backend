@@ -59,4 +59,22 @@ export class NotificationService {
             },
         };
     }
+
+    async getUnreadCount(user: UserPayload) {
+        const count = await this.prisma.notification.count({
+            where: {
+                receiverId: user.id,
+                isRead: false,
+            },
+        });
+
+        return {
+            message: "Unread notifications count fetched successfully",
+            data: {
+                unreadCount: count,
+            },
+        };
+    }
 }
+
+

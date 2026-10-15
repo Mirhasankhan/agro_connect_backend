@@ -223,6 +223,7 @@ export class OrderService {
             })
             .rawFilter({
                 customerId: user.id,
+                paymentStatus: "Paid"
             })
             .sortBy({
                 createdAt: "desc",

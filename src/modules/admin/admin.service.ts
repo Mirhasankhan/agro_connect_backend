@@ -616,8 +616,11 @@ export class AdminService {
                     id: payload.orderId,
                     status: "Active",
                     paymentStatus: "Paid",
+
                 },
                 select: {
+                    customerId:true,
+                    orderId:true,
                     deliveries: {
                         select: {
                             id: true,
@@ -709,10 +712,19 @@ export class AdminService {
         background.add(async () => {
             await this.notificationService.createNotification({
                 receiverId: payload.driverId,
-                title: `New delivery assigned to you`,
-                content: `New delivery assigned to you by the admin. Please review the details and accept the delivery.`,
+                title: `New Delivery Assigned`,
+                content: `New delivery assigned to you by the admin. Please review the details and accept the delivery. Or`,
                 notificationType: "Order",
             });
+
+            await this.notificationService.createNotification({
+                receiverId: order.customerId,
+                title: `Driver Assigned`,
+                content: `Driver assigned in order ${order.orderId}. Review the details and track your delivery.`,
+                notificationType: "Order",
+            });
+
+
         });
 
 
@@ -1430,15 +1442,15 @@ export class AdminService {
                             it.status === "Cancelled",
                     );
 
-                await tx.order.update({
-                    where: { id: report.orderItem.orderId },
-                    data: {
-                        paymentStatus: allRefundedOrCancelled
-                            ? "Refunded"
-                            : "PartiallyRefunded",
-                        status: allRefundedOrCancelled ? "Refunded" : undefined,
-                    },
-                });
+                // await tx.order.update({
+                //     where: { id: report.orderItem.orderId },
+                //     data: {
+                //         paymentStatus: allRefundedOrCancelled
+                //             ? "Refunded"
+                //             : "PartiallyRefunded",
+                //         status: allRefundedOrCancelled ? "Refunded" : undefined,
+                //     },
+                // });
             });
 
             if (report.orderItem.order.stripePaymentIntentId) {
