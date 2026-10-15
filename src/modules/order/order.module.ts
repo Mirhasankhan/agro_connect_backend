@@ -6,6 +6,7 @@ import { OrderController } from "./order.controller";
 import { StripeService } from "@/core/services/stripe/stripe.service";
 import { StripeWebhookController } from "./stripe-webhook.controller";
 import { PaymentQueueModule } from "@/core/services/payment-queue/payment-queue.module";
+import { NotificationModule } from "../notification/notification.module";
 
 @Module({
     imports: [
@@ -15,6 +16,7 @@ import { PaymentQueueModule } from "@/core/services/payment-queue/payment-queue.
             maxRedirects: 5,
         }),
         JwtModule.register({ global: true }),
+        NotificationModule
     ],
     providers: [OrderService, StripeService],
     controllers: [OrderController, StripeWebhookController],

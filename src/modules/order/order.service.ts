@@ -18,6 +18,8 @@ import { generateOrderId, generateOTP } from "../auth/auth.utils";
 import { emailBodyForDeliveryCompletion } from "../auth/auth.template";
 import sendEmail from "@/core/services/email";
 import { PaymentQueueService } from "@/core/services/payment-queue/payment-queue.service";
+import { background } from "@/common/utils/background";
+import { NotificationService } from "../notification/notification.service";
 
 const DELIVERY_CHARGE = 50;
 
@@ -28,6 +30,7 @@ export class OrderService {
         private bcryptService: BcryptService,
         private stripe: StripeService,
         private paymentQueue: PaymentQueueService,
+        private notificationService: NotificationService,
     ) { }
 
     async createOrder(user: UserPayload, payload: CreateOrderDto) {
@@ -594,6 +597,24 @@ export class OrderService {
             data: {
                 status: "SentToHub",
             },
+        });
+
+        background.add(async () => {
+            const admin = await this.prisma.user.findFirst({
+                where: {
+                    role: "ADMIN",
+                },
+                select: {
+                    id: true,
+                },
+            });
+            await this.notificationService.createNotification({
+                receiverId: admin.id,
+                title: "New Order Item Sent to Hub",
+                content:
+                    "A new order item has been sent to hub. Please review and approve the order item.",
+                notificationType: "Profile",
+            });
         });
 
         return {

@@ -4,6 +4,7 @@ import { JwtModule } from "@nestjs/jwt";
 import { AdminService } from "./admin.service";
 import { AdminController } from "./admin.controller";
 import { StripeService } from "@/core/services/stripe/stripe.service";
+import { NotificationModule } from "../notification/notification.module";
 
 
 @Module({
@@ -13,6 +14,7 @@ import { StripeService } from "@/core/services/stripe/stripe.service";
             maxRedirects: 5,
         }),
         JwtModule.register({ global: true }),
+        NotificationModule
     ],
     providers: [AdminService, StripeService],
     controllers: [AdminController],

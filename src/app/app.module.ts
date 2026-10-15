@@ -19,6 +19,7 @@ import { PaymentModule } from "@/modules/payment/payment.module";
 import { FeedbackModule } from "@/modules/feedback/feedback.module";
 import { BullModule } from "@nestjs/bullmq";
 import config from "@/config";
+import { NotificationModule } from "@/modules/notification/notification.module";
 
 @Module({
     imports: [
@@ -64,6 +65,7 @@ import config from "@/config";
         ShoppingModule,
         ShippingAddressModule,
         CommonModule,
+        NotificationModule
     ],
     controllers: [AppController],
     providers: [

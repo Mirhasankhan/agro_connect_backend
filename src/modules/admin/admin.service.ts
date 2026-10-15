@@ -17,13 +17,16 @@ import { ApiError } from "@/common/errors/api_error";
 import { FileService } from "@/core/services/files/cloudinary.service";
 import { OrderQueryDto } from "../order/dto/body.dto";
 import { StripeService } from "@/core/services/stripe/stripe.service";
+import { background } from "@/common/utils/background";
+import { NotificationService } from "../notification/notification.service";
 
 @Injectable()
 export class AdminService {
     constructor(
         private prisma: PrismaService,
         private fileService: FileService,
-        private stripe: StripeService
+        private stripe: StripeService,
+        private notificationService: NotificationService,
     ) { }
 
     async getAllProducerFromDB(query: ProducerQueryDto) {
@@ -194,6 +197,16 @@ export class AdminService {
             },
         });
 
+        background.add(async () => {
+            await this.notificationService.createNotification({
+                receiverId: payload.accountId,
+                title: `Your producer profile has been ${payload.isAccept ? "Accepted" : "Rejected"}`,
+                content:
+                    `Your producer profile has been ${payload.isAccept ? "Accepted" : "Rejected"} by the admin. Please review and approve the profile.`,
+                notificationType: "Profile",
+            });
+        });
+
         return {
             message: `${payload.isAccept ? "Accepted" : "Rejected"} producer account successfully`,
         };
@@ -344,6 +357,17 @@ export class AdminService {
                 rejectionReason: payload.isAccept ? null : payload.rejectReason,
             },
         });
+
+        background.add(async () => {
+            await this.notificationService.createNotification({
+                receiverId: payload.accountId,
+                title: `Your driver profile has been ${payload.isAccept ? "Accepted" : "Rejected"}`,
+                content:
+                    `Your driver profile has been ${payload.isAccept ? "Accepted" : "Rejected"} by the admin.`,
+                notificationType: "Profile",
+            });
+        });
+
 
         return {
             message: `${payload.isAccept ? "Accepted" : "Rejected"} driver account successfully`,
@@ -681,6 +705,16 @@ export class AdminService {
                 },
             });
         });
+
+        background.add(async () => {
+            await this.notificationService.createNotification({
+                receiverId: payload.driverId,
+                title: `New delivery assigned to you`,
+                content: `New delivery assigned to you by the admin. Please review the details and accept the delivery.`,
+                notificationType: "Order",
+            });
+        });
+
 
         return {
             message: "Driver assigned to delivery successfully",

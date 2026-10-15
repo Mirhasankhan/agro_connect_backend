@@ -24,6 +24,7 @@ import { background } from "@/common/utils/background";
 import sendEmail from "@/core/services/email";
 import { FileService } from "@/core/services/files/cloudinary.service";
 import { UserRole } from "@prisma/client";
+import { NotificationService } from "../notification/notification.service";
 
 @Injectable()
 export class AuthService {
@@ -32,6 +33,7 @@ export class AuthService {
         private bcryptService: BcryptService,
         private prisma: PrismaService,
         private fileService: FileService,
+        private notificationService: NotificationService,
     ) { }
 
     async register(payload: RegisterUserDto) {
@@ -645,6 +647,24 @@ export class AuthService {
             },
         });
 
+        background.add(async () => {
+            const admin = await this.prisma.user.findFirst({
+                where: {
+                    role: "ADMIN",
+                },
+                select: {
+                    id: true,
+                },
+            });
+            await this.notificationService.createNotification({
+                receiverId: admin.id,
+                title: "New Producer Profile Verification",
+                content:
+                    "A new producer profile has been submitted for verification. Please review and approve the profile.",
+                notificationType: "Profile",
+            });
+        });
+
         return {
             message: "Producer profile created successfully",
         };
@@ -749,6 +769,24 @@ export class AuthService {
                 region,
                 phoneNumber,
             },
+        });
+
+        background.add(async () => {
+            const admin = await this.prisma.user.findFirst({
+                where: {
+                    role: "ADMIN",
+                },
+                select: {
+                    id: true,
+                },
+            });
+            await this.notificationService.createNotification({
+                receiverId: admin.id,
+                title: "New Driver Profile Verification",
+                content:
+                    "A new driver profile has been submitted for verification. Please review and approve the profile.",
+                notificationType: "Profile",
+            });
         });
 
         return {
