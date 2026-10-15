@@ -239,20 +239,33 @@ export class ProductService {
                 imageUrls: true,
                 avgRating: true,
                 createdAt: true,
+                updatedAt: true,
                 isCertified: true,
                 isFeatured: true,
                 sold: true,
                 orderItems: {
+                    orderBy: {
+                        createdAt: "desc",
+                    },
                     select: {
+                        id: true,
+                        orderId: true,
                         quantity: true,
+                        unitPrice: true,
                         subtotal: true,
                         status: true,
                         createdAt: true,
                         order: {
                             select: {
+                                id: true,
+                                status: true,
+                                createdAt: true,
                                 customer: {
                                     select: {
+                                        id: true,
                                         fullName: true,
+                                        email: true,
+                                        phoneNumber: true,
                                         profileImage: true,
                                         shippingAddresses: {
                                             select: {
@@ -260,14 +273,13 @@ export class ProductService {
                                                 city: true,
                                                 instruction: true,
                                                 postCode: true,
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                    }
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
                 },
                 isActive: true,
                 _count: {
@@ -279,12 +291,20 @@ export class ProductService {
                     select: {
                         id: true,
                         fullName: true,
+                        email: true,
+                        phoneNumber: true,
                         profileImage: true,
                         address: true,
+                        city: true,
+                        region: true,
                         producerProfile: {
                             select: {
                                 farmName: true,
                                 companyName: true,
+                                farmLocation: true,
+                                farmSize: true,
+                                producerType: true,
+                                verificationStatus: true,
                             },
                         },
                     },
@@ -294,15 +314,21 @@ export class ProductService {
                     select: {
                         id: true,
                         name: true,
+                        slug: true,
                     },
                 },
                 reviews: {
+                    orderBy: {
+                        createdAt: "desc",
+                    },
                     select: {
+                        id: true,
                         rating: true,
                         comment: true,
                         createdAt: true,
                         buyer: {
                             select: {
+                                id: true,
                                 fullName: true,
                                 profileImage: true,
                             },
@@ -310,7 +336,11 @@ export class ProductService {
                     },
                 },
                 pricingTiers: {
+                    orderBy: {
+                        quantity: "asc",
+                    },
                     select: {
+                        id: true,
                         quantity: true,
                         pricePerUnit: true,
                     },
