@@ -14,13 +14,15 @@ import {
 import { ApiError } from "@/common/errors/api_error";
 import { FileService } from "@/core/services/files/cloudinary.service";
 import { OrderQueryDto } from "../order/dto/body.dto";
+import { StripeService } from "@/core/services/stripe/stripe.service";
 
 @Injectable()
 export class AdminService {
     constructor(
         private prisma: PrismaService,
         private fileService: FileService,
-    ) {}
+        private stripe: StripeService
+    ) { }
 
     async getAllProducerFromDB(query: ProducerQueryDto) {
         const queryBuilder = new QueryBuilder(this.prisma.user, query);
@@ -933,6 +935,204 @@ export class AdminService {
                 earnings: allEarnings,
                 meta: pagination,
             },
+        };
+    }
+
+    async transferProducerEarningManually(earningId: string) {
+        const earning = await this.prisma.producerEarning.findUnique({
+            where: {
+                id: earningId,
+            },
+            select: {
+                id: true,
+                producerId: true,
+                orderItemId: true,
+                createdAt: true,
+                amount: true,
+                isTransferred: true,
+            },
+        });
+
+        if (!earning) {
+            throw new ApiError(
+                HttpStatus.NOT_FOUND,
+                "Producer earning record not found",
+            );
+        }
+
+        if (earning.isTransferred) {
+            throw new ApiError(
+                HttpStatus.BAD_REQUEST,
+                "Earning has already been transferred",
+            );
+        }
+
+        if (earning.createdAt.getTime() + 24 * 60 * 60 * 1000 > Date.now()) {
+            throw new ApiError(
+                HttpStatus.BAD_REQUEST,
+                "Please wait for 24 hours to transfer the earning",
+            );
+        }
+
+        const unsolvedReport = await this.prisma.report.findFirst({
+            where: {
+                orderItemId: earning.orderItemId,
+                status: "Pending",
+            },
+            select: {
+                id: true,
+            },
+        });
+
+        if (unsolvedReport) {
+            throw new ApiError(
+                HttpStatus.BAD_REQUEST,
+                "Please resolve the report before transferring the earning",
+            );
+        }
+
+        const producer = await this.prisma.producerProfile.findUnique({
+            where: {
+                userId: earning.producerId,
+            },
+            select: {
+                stripeAccountId: true,
+            },
+        });
+
+        if (!producer || !producer.stripeAccountId) {
+            throw new ApiError(
+                HttpStatus.BAD_REQUEST,
+                "Producer stripe account not found",
+            );
+        }
+
+        if (!earning.amount || earning.amount <= 0) {
+            throw new ApiError(
+                HttpStatus.BAD_REQUEST,
+                "Invalid earning amount to transfer",
+            );
+        }
+
+        const transfer = await this.stripe.createTransfer({
+            amount: earning.amount,
+            destination: producer.stripeAccountId,
+            idempotencyKey: `producer-earning-${earning.id}`,
+        });
+
+        await this.prisma.producerEarning.update({
+            where: {
+                id: earningId,
+            },
+            data: {
+                isTransferred: true,
+                stripeTransferId: transfer.id,
+                paidAt: new Date(),
+            },
+        });
+
+        return {
+            message: "Earning transferred successfully",
+        };
+    }
+
+    async transferDriverEarningManually(earningId: string) {
+        const earning = await this.prisma.driverEarning.findUnique({
+            where: {
+                id: earningId,
+            },
+            select: {
+                id: true,
+                driverId: true,
+                orderId: true,
+                createdAt: true,
+                amount: true,
+                isTransferred: true,
+            },
+        });
+
+        if (!earning) {
+            throw new ApiError(
+                HttpStatus.NOT_FOUND,
+                "Driver earning record not found",
+            );
+        }
+
+        if (earning.isTransferred) {
+            throw new ApiError(
+                HttpStatus.BAD_REQUEST,
+                "Earning has already been transferred",
+            );
+        }
+
+        if (earning.createdAt.getTime() + 24 * 60 * 60 * 1000 > Date.now()) {
+            throw new ApiError(
+                HttpStatus.BAD_REQUEST,
+                "Please wait for 24 hours to transfer the earning",
+            );
+        }
+
+        const unsolvedReport = await this.prisma.report.findFirst({
+            where: {
+                orderItem: {
+                    orderId: earning.orderId,
+                },
+                status: "Pending",
+            },
+            select: {
+                id: true,
+            },
+        });
+
+        if (unsolvedReport) {
+            throw new ApiError(
+                HttpStatus.BAD_REQUEST,
+                "Please resolve the report before transferring the earning",
+            );
+        }
+
+        const driver = await this.prisma.driverProfile.findUnique({
+            where: {
+                userId: earning.driverId,
+            },
+            select: {
+                stripeAccountId: true,
+            },
+        });
+
+        if (!driver || !driver.stripeAccountId) {
+            throw new ApiError(
+                HttpStatus.BAD_REQUEST,
+                "Driver stripe account not found",
+            );
+        }
+
+        if (!earning.amount || earning.amount <= 0) {
+            throw new ApiError(
+                HttpStatus.BAD_REQUEST,
+                "Invalid earning amount to transfer",
+            );
+        }
+
+        const transfer = await this.stripe.createTransfer({
+            amount: earning.amount,
+            destination: driver.stripeAccountId,
+            idempotencyKey: `driver-earning-${earning.id}`,
+        });
+
+        await this.prisma.driverEarning.update({
+            where: {
+                id: earningId,
+            },
+            data: {
+                isTransferred: true,
+                stripeTransferId: transfer.id,
+                paidAt: new Date(),
+            },
+        });
+
+        return {
+            message: "Driver earning transferred successfully",
         };
     }
 }

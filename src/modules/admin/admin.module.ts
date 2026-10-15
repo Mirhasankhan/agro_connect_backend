@@ -3,6 +3,7 @@ import { Module } from "@nestjs/common";
 import { JwtModule } from "@nestjs/jwt";
 import { AdminService } from "./admin.service";
 import { AdminController } from "./admin.controller";
+import { StripeService } from "@/core/services/stripe/stripe.service";
 
 
 @Module({
@@ -13,7 +14,7 @@ import { AdminController } from "./admin.controller";
         }),
         JwtModule.register({ global: true }),
     ],
-    providers: [AdminService],
+    providers: [AdminService, StripeService],
     controllers: [AdminController],
     exports: [AdminService],
 })

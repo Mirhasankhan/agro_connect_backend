@@ -247,4 +247,29 @@ export class AdminController {
             data: result.data,
         });
     }
+
+    @Post("transfer-producer-earning/:id")
+    @ApiOperation({ summary: "Transfer producer earning manually" })
+    @Roles(UserRole.ADMIN)
+    async transferProducerEarning(@Param("id") id: string) {
+        const result =
+            await this.adminService.transferProducerEarningManually(id);
+
+        return ResponseService.formatResponse({
+            statusCode: HttpStatus.OK,
+            message: result.message,
+        });
+    }
+
+    @Post("transfer-driver-earning/:id")
+    @ApiOperation({ summary: "Transfer driver earning manually" })
+    @Roles(UserRole.ADMIN)
+    async transferDriverEarning(@Param("id") id: string) {
+        const result = await this.adminService.transferDriverEarningManually(id);
+
+        return ResponseService.formatResponse({
+            statusCode: HttpStatus.OK,
+            message: result.message,
+        });
+    }
 }
