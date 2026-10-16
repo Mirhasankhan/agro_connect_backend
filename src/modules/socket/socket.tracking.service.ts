@@ -123,6 +123,8 @@ export class SocketTrackingService {
                 driverId: true,
                 status: true,
                 isTracking: true,
+                startLatitude: true,
+                startLongitude: true,
                 latitude: true,
                 longitude: true,
                 order: {
@@ -178,6 +180,8 @@ export class SocketTrackingService {
             !isNaN(initialCoords.latitude) &&
             !isNaN(initialCoords.longitude)
         ) {
+            updateData.startLatitude = initialCoords.latitude;
+            updateData.startLongitude = initialCoords.longitude;
             updateData.latitude = initialCoords.latitude;
             updateData.longitude = initialCoords.longitude;
             if (typeof initialCoords.heading === "number") updateData.heading = initialCoords.heading;
@@ -192,6 +196,8 @@ export class SocketTrackingService {
                 orderId: true,
                 status: true,
                 isTracking: true,
+                startLatitude: true,
+                startLongitude: true,
                 latitude: true,
                 longitude: true,
                 heading: true,
@@ -232,20 +238,29 @@ export class SocketTrackingService {
         const now = Date.now();
         const lastSaved = this.lastSavedTimes.get(deliveryId) || 0;
 
+        const effectiveStartLat = delivery.startLatitude ?? latitude;
+        const effectiveStartLng = delivery.startLongitude ?? longitude;
+
         // Throttled persistence to MongoDB: only write if threshold passed
         if (now - lastSaved >= this.DB_PERSIST_THROTTLE_MS) {
             this.lastSavedTimes.set(deliveryId, now);
+            const dbData: Prisma.DeliveryUpdateInput = {
+                latitude,
+                longitude,
+                heading: typeof heading === "number" ? heading : null,
+                speed: typeof speed === "number" ? speed : null,
+                isTracking: true,
+                trackingUpdatedAt: new Date(),
+            };
+            if (delivery.startLatitude === null || delivery.startLatitude === undefined) {
+                dbData.startLatitude = latitude;
+                dbData.startLongitude = longitude;
+            }
+
             this.prisma.delivery
                 .update({
                     where: { id: deliveryId },
-                    data: {
-                        latitude,
-                        longitude,
-                        heading: typeof heading === "number" ? heading : null,
-                        speed: typeof speed === "number" ? speed : null,
-                        isTracking: true,
-                        trackingUpdatedAt: new Date(),
-                    },
+                    data: dbData,
                 })
                 .catch((err) => {
                     this.logger.error(`Failed to persist location to DB for delivery ${deliveryId}: ${err.message}`);
@@ -254,6 +269,8 @@ export class SocketTrackingService {
 
         return {
             deliveryId,
+            startLatitude: effectiveStartLat,
+            startLongitude: effectiveStartLng,
             latitude,
             longitude,
             heading: typeof heading === "number" ? heading : null,
@@ -313,6 +330,8 @@ export class SocketTrackingService {
             orderStatus: delivery.order.status,
             status: delivery.status,
             isTracking: delivery.isTracking,
+            startLatitude: delivery.startLatitude,
+            startLongitude: delivery.startLongitude,
             latitude: delivery.latitude,
             longitude: delivery.longitude,
             heading: delivery.heading,

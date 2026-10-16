@@ -675,6 +675,8 @@ export class OrderService {
                 id: true,
                 status: true,
                 otpHash: true,
+                startLatitude: true,
+                startLongitude: true,
                 latitude: true,
                 longitude: true,
                 heading: true,

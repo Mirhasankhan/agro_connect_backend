@@ -805,6 +805,8 @@ export class AdminService {
                     select: {
                         id: true,
                         status: true,
+                        startLatitude: true,
+                        startLongitude: true,
                         latitude: true,
                         longitude: true,
                         heading: true,

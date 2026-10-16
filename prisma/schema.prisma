@@ -371,6 +371,8 @@ model Delivery {
   driverId  String         @db.ObjectId
   status    DeliveryStatus @default(Assigned)
   otpHash   String?
+  startLatitude     Float?
+  startLongitude    Float?
   latitude          Float?
   longitude         Float?
   heading           Float?
