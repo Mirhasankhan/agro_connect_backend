@@ -121,7 +121,9 @@ export class WebsocketGateway
             }
 
             this.presence.add(userId, socket.id);
+            await socket.join(this.userRoomName(userId));
             socket.emit("authenticated", { userId, message: "Authenticated" });
+            await this.emitConversationListToSocket(socket, userId);
         } catch (err) {
             this.logger.warn(
                 `Socket ${socket.id} auth failed: ${(err as Error).message}`,
@@ -155,10 +157,12 @@ export class WebsocketGateway
                     if (userId) {
                         socket.data.userId = userId;
                         this.presence.add(userId, socket.id);
+                        await socket.join(this.userRoomName(userId));
                         socket.emit("authenticated", {
                             userId,
                             message: "Authenticated",
                         });
+                        await this.emitConversationListToSocket(socket, userId);
                     }
                 }
             }
@@ -189,6 +193,8 @@ export class WebsocketGateway
                 },
                 data: { isRead: true },
             });
+
+            await this.emitConversationListToUser(userId);
 
             const messages = await this.prisma.chatMessage.findMany({
                 where: { conversationId: conversation.id },
@@ -254,10 +260,12 @@ export class WebsocketGateway
                     if (senderId) {
                         socket.data.userId = senderId;
                         this.presence.add(senderId, socket.id);
+                        await socket.join(this.userRoomName(senderId));
                         socket.emit("authenticated", {
                             userId: senderId,
                             message: "Authenticated",
                         });
+                        await this.emitConversationListToSocket(socket, senderId);
                     }
                 }
             }
@@ -314,12 +322,50 @@ export class WebsocketGateway
                 const { senderId: msgSenderId, ...message } = savedMessage;
                 targetSocket.emit("message", {
                     ...message,
+                    senderId: msgSenderId,
                     isRead: isRecipientSubscribed,
                     isSendByMe: msgSenderId === targetSocket.data.userId,
                 });
             }
+
+            await Promise.all([
+                this.emitConversationListToUser(senderId),
+                this.emitConversationListToUser(payload.receiverId),
+            ]);
         } catch (err) {
             this.handleError(socket, err, "sendMessage");
+        }
+    }
+
+    @SubscribeMessage("conversationList")
+    @SubscribeMessage("conversatinList")
+    async handleConversationListRequest(
+        @MessageBody() rawPayload: unknown,
+        @ConnectedSocket() socket: Socket,
+    ) {
+        try {
+            let userId = socket.data.userId as string | undefined;
+            const payload = this.parsePayload<{ token?: string }>(rawPayload);
+
+            if (!userId) {
+                const token = this.extractToken(socket, payload);
+                if (token) {
+                    userId = await this.validateToken(token);
+                    if (userId) {
+                        socket.data.userId = userId;
+                        this.presence.add(userId, socket.id);
+                        await socket.join(this.userRoomName(userId));
+                    }
+                }
+            }
+
+            if (!userId) {
+                return this.emitError(socket, "Not authenticated");
+            }
+
+            await this.emitConversationListToSocket(socket, userId);
+        } catch (err) {
+            this.handleError(socket, err, "conversationList");
         }
     }
 
@@ -452,6 +498,108 @@ export class WebsocketGateway
 
     private roomName(conversationId: string) {
         return `conversation:${conversationId}`;
+    }
+
+    private userRoomName(userId: string) {
+        return `user:${userId}`;
+    }
+
+    async getUserConversations(userId: string) {
+        const conversations = await this.prisma.conversation.findMany({
+            where: {
+                OR: [{ participantA: userId }, { participantB: userId }],
+            },
+            orderBy: { updatedAt: "desc" },
+            include: {
+                participantAUser: {
+                    select: {
+                        id: true,
+                        fullName: true,
+                        profileImage: true,
+                        role: true,
+                    },
+                },
+                participantBUser: {
+                    select: {
+                        id: true,
+                        fullName: true,
+                        profileImage: true,
+                        role: true,
+                    },
+                },
+                messages: {
+                    orderBy: { createdAt: "desc" },
+                    take: 1,
+                    select: {
+                        message: true,
+                        images: true,
+                        createdAt: true,
+                    },
+                },
+            },
+        });
+
+        return Promise.all(
+            conversations.map(async (conversation) => {
+                const participant =
+                    conversation.participantA === userId
+                        ? conversation.participantBUser
+                        : conversation.participantAUser;
+                const otherUserId =
+                    conversation.participantA === userId
+                        ? conversation.participantB
+                        : conversation.participantA;
+                const unreadCount = await this.prisma.chatMessage.count({
+                    where: {
+                        conversationId: conversation.id,
+                        receiverId: userId,
+                        isRead: false,
+                    },
+                });
+
+                return {
+                    participant: participant
+                        ? {
+                            ...participant,
+                            isOnline: this.presence.isOnline(otherUserId),
+                        }
+                        : {
+                            id: otherUserId,
+                            fullName: "User",
+                            profileImage: null,
+                            role: undefined,
+                            isOnline: false,
+                        },
+                    lastMessage: conversation.messages[0] || null,
+                    unreadCount,
+                };
+            }),
+        );
+    }
+
+    async emitConversationListToUser(userId: string) {
+        try {
+            const list = await this.getUserConversations(userId);
+            const userRoom = this.userRoomName(userId);
+            this.server.to(userRoom).emit("conversationList", list);
+            this.server.to(userRoom).emit("conversatinList", list);
+        } catch (err) {
+            this.logger.error(
+                `Failed to emit conversation list to user ${userId}: ${(err as Error).message}`,
+            );
+        }
+    }
+
+    async emitConversationListToSocket(socket: Socket, userId: string) {
+        try {
+            const list = await this.getUserConversations(userId);
+            socket.emit("conversationList", list);
+            socket.emit("conversatinList", list);
+        } catch (err) {
+            this.logger.error(
+                `Failed to emit conversation list to socket ${socket.id}: ${(err as Error).message}`,
+            );
+        }
     }
 
     deliveryRoomName(deliveryId: string) {

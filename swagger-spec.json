@@ -1559,21 +1559,6 @@
         ]
       }
     },
-    "/conversations": {
-      "get": {
-        "operationId": "SocketController_getConversations",
-        "parameters": [],
-        "responses": {},
-        "tags": [
-          "Socket"
-        ],
-        "security": [
-          {
-            "accessToken": []
-          }
-        ]
-      }
-    },
     "/auth/register": {
       "post": {
         "operationId": "AuthController_register",
