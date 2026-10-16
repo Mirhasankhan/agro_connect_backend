@@ -24,6 +24,12 @@ type SubscribePayload = {
     token?: string;
 };
 
+type UnsubscribePayload = {
+    userId?: string;
+    conversationId?: string;
+    token?: string;
+};
+
 type MessagePayload = {
     receiverId: string;
     message: string;
@@ -183,6 +189,17 @@ export class WebsocketGateway
                 payload.userId,
             );
             const room = this.roomName(conversation.id);
+
+            // Leave any previous conversation rooms this socket was in
+            const currentConversationRooms = Array.from(socket.rooms).filter((r) =>
+                r.startsWith("conversation:"),
+            );
+            for (const r of currentConversationRooms) {
+                if (r !== room) {
+                    await socket.leave(r);
+                }
+            }
+
             await socket.join(room);
 
             await this.prisma.chatMessage.updateMany({
@@ -195,6 +212,12 @@ export class WebsocketGateway
             });
 
             await this.emitConversationListToUser(userId);
+
+            // Notify other participants in this conversation room that messages were marked as read
+            socket.to(room).emit("messagesRead", {
+                conversationId: conversation.id,
+                readBy: userId,
+            });
 
             const messages = await this.prisma.chatMessage.findMany({
                 where: { conversationId: conversation.id },
@@ -240,6 +263,86 @@ export class WebsocketGateway
             });
         } catch (err) {
             this.handleError(socket, err, "subscribe");
+        }
+    }
+
+    @SubscribeMessage("unsubscribe")
+    @SubscribeMessage("unsubscribeConversation")
+    @SubscribeMessage("chat:unsubscribe")
+    async unsubscribe(
+        @MessageBody() rawPayload: unknown,
+        @ConnectedSocket() socket: Socket,
+    ) {
+        try {
+            let userId = socket.data.userId as string | undefined;
+            const payload = this.parsePayload<UnsubscribePayload>(rawPayload);
+
+            // Defensive authentication check in case handshake was delayed
+            if (!userId) {
+                const token = this.extractToken(socket, payload);
+                if (token) {
+                    userId = await this.validateToken(token);
+                    if (userId) {
+                        socket.data.userId = userId;
+                        this.presence.add(userId, socket.id);
+                        await socket.join(this.userRoomName(userId));
+                    }
+                }
+            }
+
+            if (!userId) {
+                return this.emitError(socket, "Not authenticated");
+            }
+
+            if (payload.userId) {
+                const [participantA, participantB] = [userId, payload.userId].sort();
+                const conversation = await this.prisma.conversation.findUnique({
+                    where: {
+                        participantA_participantB: { participantA, participantB },
+                    },
+                    select: { id: true },
+                });
+
+                if (conversation) {
+                    const room = this.roomName(conversation.id);
+                    await socket.leave(room);
+                    socket.emit("unsubscribed", {
+                        conversationId: conversation.id,
+                        userId: payload.userId,
+                    });
+                    this.logger.log(
+                        `Socket ${socket.id} (user ${userId}) unsubscribed from conversation ${conversation.id}`,
+                    );
+                    return;
+                }
+            }
+
+            if (payload.conversationId) {
+                const room = this.roomName(payload.conversationId);
+                await socket.leave(room);
+                socket.emit("unsubscribed", {
+                    conversationId: payload.conversationId,
+                });
+                this.logger.log(
+                    `Socket ${socket.id} (user ${userId}) unsubscribed from conversation ${payload.conversationId}`,
+                );
+                return;
+            }
+
+            // Fallback: Leave all active conversation rooms for this socket
+            const conversationRooms = Array.from(socket.rooms).filter((r) =>
+                r.startsWith("conversation:"),
+            );
+            for (const room of conversationRooms) {
+                await socket.leave(room);
+            }
+
+            socket.emit("unsubscribed", { all: true });
+            this.logger.log(
+                `Socket ${socket.id} (user ${userId}) unsubscribed from all conversations`,
+            );
+        } catch (err) {
+            this.handleError(socket, err, "unsubscribe");
         }
     }
 
