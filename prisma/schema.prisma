@@ -371,8 +371,13 @@ model Delivery {
   driverId  String         @db.ObjectId
   status    DeliveryStatus @default(Assigned)
   otpHash   String?
-  latitude  Float?
-  longitude Float?
+  latitude          Float?
+  longitude         Float?
+  heading           Float?
+  speed             Float?
+  isTracking        Boolean        @default(false)
+  trackingStartedAt DateTime?
+  trackingUpdatedAt DateTime?
 
   order  Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
   driver User  @relation(fields: [driverId], references: [id])

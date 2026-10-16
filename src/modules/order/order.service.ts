@@ -20,6 +20,9 @@ import sendEmail from "@/core/services/email";
 import { PaymentQueueService } from "@/core/services/payment-queue/payment-queue.service";
 import { background } from "@/common/utils/background";
 import { NotificationService } from "../notification/notification.service";
+import { SocketTrackingService } from "../socket/socket.tracking.service";
+import { WebsocketGateway } from "../socket/socket.io.service";
+import { StartTrackingDto, StopTrackingDto } from "./dto/tracking.dto";
 
 const DELIVERY_CHARGE = 50;
 
@@ -31,6 +34,8 @@ export class OrderService {
         private stripe: StripeService,
         private paymentQueue: PaymentQueueService,
         private notificationService: NotificationService,
+        private socketTrackingService: SocketTrackingService,
+        private websocketGateway: WebsocketGateway,
     ) { }
 
     async createOrder(user: UserPayload, payload: CreateOrderDto) {
@@ -670,13 +675,22 @@ export class OrderService {
                 id: true,
                 status: true,
                 otpHash: true,
+                latitude: true,
+                longitude: true,
+                heading: true,
+                speed: true,
+                isTracking: true,
+                trackingStartedAt: true,
+                trackingUpdatedAt: true,
                 order: {
                     select: {
+                        id: true,
                         orderId: true,
                         totalAmount: true,
                         status: true,
                         shippingAddress: {
                             select: {
+                                id: true,
                                 addressLine: true,
                                 city: true,
                                 instruction: true,
@@ -685,7 +699,9 @@ export class OrderService {
                         },
                         customer: {
                             select: {
+                                id: true,
                                 fullName: true,
+                                phoneNumber: true,
                                 profileImage: true,
                             },
                         },
@@ -696,7 +712,6 @@ export class OrderService {
                                 unitPrice: true,
                                 quantity: true,
                                 sellingUnit: true,
-
                             },
                         },
                     },
@@ -707,6 +722,49 @@ export class OrderService {
         return {
             message: "Delivery details fetched successfully",
             data: delivery,
+        };
+    }
+
+    async getDeliveryTrackingSnapshot(deliveryId: string, user: UserPayload) {
+        const snapshot = await this.socketTrackingService.getTrackingSnapshot(deliveryId, user.id);
+        return {
+            message: "Live tracking snapshot fetched successfully",
+            data: snapshot,
+        };
+    }
+
+    async startDeliveryTracking(payload: StartTrackingDto, user: UserPayload) {
+        const result = await this.socketTrackingService.startTracking(payload.deliveryId, user.id, {
+            latitude: payload.latitude,
+            longitude: payload.longitude,
+            heading: payload.heading,
+            speed: payload.speed,
+        });
+
+        this.websocketGateway.notifyDeliveryStatusChanged(
+            payload.deliveryId,
+            result.status,
+            true,
+        );
+
+        return {
+            message: "Live tracking started successfully",
+            data: result,
+        };
+    }
+
+    async stopDeliveryTracking(payload: StopTrackingDto, user: UserPayload) {
+        const result = await this.socketTrackingService.stopTracking(payload.deliveryId, user.id);
+
+        this.websocketGateway.notifyDeliveryStatusChanged(
+            payload.deliveryId,
+            result.status,
+            false,
+        );
+
+        return {
+            message: "Live tracking stopped successfully",
+            data: result,
         };
     }
 
@@ -735,6 +793,8 @@ export class OrderService {
                 },
             });
 
+            this.websocketGateway.notifyDeliveryStatusChanged(payload.deliveryId, "PickedUp", false);
+
             return {
                 message: "Delivery marked as picked up successfully",
             };
@@ -744,6 +804,8 @@ export class OrderService {
                     id: payload.deliveryId,
                 },
             });
+
+            this.websocketGateway.notifyDeliveryStatusChanged(payload.deliveryId, "Cancelled", false);
 
             return {
                 message: "Delivery cancelled successfully",
@@ -857,6 +919,8 @@ export class OrderService {
                         },
                         data: {
                             status: "Delivered",
+                            isTracking: false,
+                            trackingUpdatedAt: new Date(),
                         },
                     }),
                     transaction.driverProfile.update({
@@ -927,6 +991,8 @@ export class OrderService {
                 queueError,
             );
         }
+
+        this.websocketGateway.notifyDeliveryStatusChanged(payload.deliveryId, "Delivered", false);
 
         return {
             message: "Delivery marked as completed successfully",

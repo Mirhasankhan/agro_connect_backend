@@ -16,6 +16,7 @@ import { UserRole } from "@prisma/client";
 import { Server, Socket } from "socket.io";
 import config from "@/config";
 import { SocketPresenceService } from "./socket.presence.service";
+import { SocketTrackingService } from "./socket.tracking.service";
 import { ApiError } from "@/common/errors/api_error";
 
 type SubscribePayload = {
@@ -27,6 +28,35 @@ type MessagePayload = {
     receiverId: string;
     message: string;
     images?: string[];
+    token?: string;
+};
+
+type TrackingSubscribePayload = {
+    deliveryId: string;
+    token?: string;
+};
+
+type TrackingStartPayload = {
+    deliveryId: string;
+    latitude?: number;
+    longitude?: number;
+    heading?: number;
+    speed?: number;
+    token?: string;
+};
+
+type TrackingLocationPayload = {
+    deliveryId: string;
+    latitude: number;
+    longitude: number;
+    heading?: number;
+    speed?: number;
+    timestamp?: string | number;
+    token?: string;
+};
+
+type TrackingStopPayload = {
+    deliveryId: string;
     token?: string;
 };
 
@@ -45,6 +75,7 @@ export class WebsocketGateway
         private readonly configService: ConfigService,
         private readonly jwtService: JwtService,
         private readonly presence: SocketPresenceService,
+        private readonly trackingService: SocketTrackingService,
     ) { }
 
     afterInit(server: Server) {
@@ -319,7 +350,7 @@ export class WebsocketGateway
         }
     }
 
-    private extractToken(socket: Socket, payload?: any): string | null {
+    private extractToken(socket: Socket, payload?: Record<string, unknown>): string | null {
         const { auth, query, headers } = socket.handshake;
 
         const raw =
@@ -421,6 +452,251 @@ export class WebsocketGateway
 
     private roomName(conversationId: string) {
         return `conversation:${conversationId}`;
+    }
+
+    deliveryRoomName(deliveryId: string) {
+        return `delivery:${deliveryId}`;
+    }
+
+    // ==========================================
+    // Real-Time Driver Tracking Event Handlers
+    // ==========================================
+
+    @SubscribeMessage("tracking:subscribe")
+    @SubscribeMessage("subscribeTracking")
+    async handleTrackingSubscribe(
+        @MessageBody() rawPayload: unknown,
+        @ConnectedSocket() socket: Socket,
+    ) {
+        try {
+            const payload = this.parsePayload<TrackingSubscribePayload>(rawPayload);
+            const userId = await this.ensureAuthenticatedUserId(socket, payload);
+            if (!userId) {
+                return this.emitTrackingError(socket, "Not authenticated", payload.deliveryId);
+            }
+
+            if (!payload.deliveryId) {
+                return this.emitTrackingError(socket, "Delivery ID is required for tracking subscription");
+            }
+
+            const auth = await this.trackingService.validateViewerAuthorization(
+                payload.deliveryId,
+                userId,
+            );
+
+            const room = this.deliveryRoomName(payload.deliveryId);
+            await socket.join(room);
+
+            // Send initial snapshot directly to subscriber
+            socket.emit("tracking:initial", {
+                deliveryId: payload.deliveryId,
+                orderId: auth.delivery.order.orderId,
+                orderDbId: auth.delivery.order.id,
+                orderStatus: auth.delivery.order.status,
+                status: auth.delivery.status,
+                isTracking: auth.delivery.isTracking,
+                latitude: auth.delivery.latitude,
+                longitude: auth.delivery.longitude,
+                heading: auth.delivery.heading,
+                speed: auth.delivery.speed,
+                trackingStartedAt: auth.delivery.trackingStartedAt,
+                trackingUpdatedAt: auth.delivery.trackingUpdatedAt,
+                driver: auth.delivery.driver,
+                customer: auth.delivery.order.customer,
+                shippingAddress: auth.delivery.order.shippingAddress,
+            });
+
+            this.logger.debug(
+                `Socket ${socket.id} (user ${userId}, role ${auth.role}) subscribed to tracking room ${room}`,
+            );
+        } catch (err) {
+            this.handleError(socket, err, "tracking:subscribe");
+        }
+    }
+
+    @SubscribeMessage("tracking:unsubscribe")
+    @SubscribeMessage("unsubscribeTracking")
+    async handleTrackingUnsubscribe(
+        @MessageBody() rawPayload: unknown,
+        @ConnectedSocket() socket: Socket,
+    ) {
+        try {
+            const payload = this.parsePayload<TrackingSubscribePayload>(rawPayload);
+            if (payload.deliveryId) {
+                const room = this.deliveryRoomName(payload.deliveryId);
+                await socket.leave(room);
+                socket.emit("tracking:unsubscribed", { deliveryId: payload.deliveryId });
+                this.logger.debug(`Socket ${socket.id} left tracking room ${room}`);
+            }
+        } catch (err) {
+            this.handleError(socket, err, "tracking:unsubscribe");
+        }
+    }
+
+    @SubscribeMessage("tracking:start")
+    @SubscribeMessage("startDriverTracking")
+    async handleTrackingStart(
+        @MessageBody() rawPayload: unknown,
+        @ConnectedSocket() socket: Socket,
+    ) {
+        try {
+            const payload = this.parsePayload<TrackingStartPayload>(rawPayload);
+            const userId = await this.ensureAuthenticatedUserId(socket, payload);
+            if (!userId) {
+                return this.emitTrackingError(socket, "Not authenticated", payload.deliveryId);
+            }
+
+            if (!payload.deliveryId) {
+                return this.emitTrackingError(socket, "Delivery ID is required to start tracking");
+            }
+
+            const updated = await this.trackingService.startTracking(
+                payload.deliveryId,
+                userId,
+                {
+                    latitude: payload.latitude,
+                    longitude: payload.longitude,
+                    heading: payload.heading,
+                    speed: payload.speed,
+                },
+            );
+
+            const room = this.deliveryRoomName(payload.deliveryId);
+            await socket.join(room);
+
+            // Broadcast tracking started status to all room subscribers
+            this.server.to(room).emit("tracking:status", {
+                deliveryId: payload.deliveryId,
+                isTracking: true,
+                status: updated.status,
+                latitude: updated.latitude,
+                longitude: updated.longitude,
+                heading: updated.heading,
+                speed: updated.speed,
+                trackingStartedAt: updated.trackingStartedAt,
+                trackingUpdatedAt: updated.trackingUpdatedAt,
+                timestamp: new Date().toISOString(),
+            });
+
+            socket.emit("tracking:started", {
+                deliveryId: payload.deliveryId,
+                isTracking: true,
+            });
+        } catch (err) {
+            this.handleError(socket, err, "tracking:start");
+        }
+    }
+
+    @SubscribeMessage("tracking:update")
+    @SubscribeMessage("tracking:location")
+    @SubscribeMessage("driverLocationUpdate")
+    async handleTrackingLocationUpdate(
+        @MessageBody() rawPayload: unknown,
+        @ConnectedSocket() socket: Socket,
+    ) {
+        try {
+            const payload = this.parsePayload<TrackingLocationPayload>(rawPayload);
+            const userId = await this.ensureAuthenticatedUserId(socket, payload);
+            if (!userId) {
+                return this.emitTrackingError(socket, "Not authenticated", payload.deliveryId);
+            }
+
+            if (!payload.deliveryId || typeof payload.latitude !== "number" || typeof payload.longitude !== "number") {
+                return this.emitTrackingError(socket, "Valid deliveryId, latitude, and longitude are required");
+            }
+
+            const broadcastData = await this.trackingService.processLocationUpdate(userId, {
+                deliveryId: payload.deliveryId,
+                latitude: payload.latitude,
+                longitude: payload.longitude,
+                heading: payload.heading,
+                speed: payload.speed,
+                timestamp: payload.timestamp,
+            });
+
+            const room = this.deliveryRoomName(payload.deliveryId);
+            if (!socket.rooms.has(room)) {
+                await socket.join(room);
+            }
+
+            // Broadcast real-time location event to all subscribers in delivery room
+            this.server.to(room).emit("tracking:location", broadcastData);
+        } catch (err) {
+            this.handleError(socket, err, "tracking:update");
+        }
+    }
+
+    @SubscribeMessage("tracking:stop")
+    @SubscribeMessage("stopDriverTracking")
+    async handleTrackingStop(
+        @MessageBody() rawPayload: unknown,
+        @ConnectedSocket() socket: Socket,
+    ) {
+        try {
+            const payload = this.parsePayload<TrackingStopPayload>(rawPayload);
+            const userId = await this.ensureAuthenticatedUserId(socket, payload);
+            if (!userId) {
+                return this.emitTrackingError(socket, "Not authenticated", payload.deliveryId);
+            }
+
+            if (!payload.deliveryId) {
+                return this.emitTrackingError(socket, "Delivery ID is required to stop tracking");
+            }
+
+            const updated = await this.trackingService.stopTracking(payload.deliveryId, userId);
+
+            const room = this.deliveryRoomName(payload.deliveryId);
+            this.server.to(room).emit("tracking:status", {
+                deliveryId: payload.deliveryId,
+                isTracking: false,
+                status: updated.status,
+                trackingUpdatedAt: updated.trackingUpdatedAt,
+                timestamp: new Date().toISOString(),
+            });
+
+            socket.emit("tracking:stopped", {
+                deliveryId: payload.deliveryId,
+                isTracking: false,
+            });
+        } catch (err) {
+            this.handleError(socket, err, "tracking:stop");
+        }
+    }
+
+    notifyDeliveryStatusChanged(deliveryId: string, status: string, isTracking = false) {
+        const room = this.deliveryRoomName(deliveryId);
+        this.server?.to(room).emit("tracking:status", {
+            deliveryId,
+            isTracking,
+            status,
+            timestamp: new Date().toISOString(),
+        });
+    }
+
+    private emitTrackingError(socket: Socket, message: string, deliveryId?: string) {
+        socket.emit("tracking:error", { message, deliveryId });
+    }
+
+    private async ensureAuthenticatedUserId(
+        socket: Socket,
+        payload?: Record<string, unknown>,
+    ): Promise<string | null> {
+        let userId = socket.data.userId as string | undefined;
+        if (!userId) {
+            const token = this.extractToken(socket, payload);
+            if (token) {
+                userId = await this.validateToken(token);
+                if (userId) {
+                    socket.data.userId = userId;
+                    this.presence.add(userId, socket.id);
+                    socket.emit("authenticated", {
+                        userId,
+                        message: "Authenticated",
+                    });
+                }
+            }
+        }
+        return userId || null;
     }
 
     private handleError(socket: Socket, err: unknown, event: string) {

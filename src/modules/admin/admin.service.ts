@@ -807,6 +807,11 @@ export class AdminService {
                         status: true,
                         latitude: true,
                         longitude: true,
+                        heading: true,
+                        speed: true,
+                        isTracking: true,
+                        trackingStartedAt: true,
+                        trackingUpdatedAt: true,
                         createdAt: true,
                         updatedAt: true,
                         driver: {
@@ -1472,6 +1477,7 @@ export class AdminService {
                             it.status === "Refunded" ||
                             it.status === "Cancelled",
                     );
+                    console.log("allRefundedOrCancelled", allRefundedOrCancelled);
 
                 // await tx.order.update({
                 //     where: { id: report.orderItem.orderId },

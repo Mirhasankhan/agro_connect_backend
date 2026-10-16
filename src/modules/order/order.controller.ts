@@ -19,6 +19,7 @@ import { UserRole } from "@prisma/client";
 import { OrderService } from "./order.service";
 import { ConfirmDeliveryDto, CreateOrderDto, DeliveryDto, OrderQueryDto } from "./dto/body.dto";
 import { ReportQueryDto } from "../admin/dto/body.dto";
+import { StartTrackingDto, StopTrackingDto } from "./dto/tracking.dto";
 
 @ApiTags("Order")
 @Controller("order")
@@ -197,4 +198,52 @@ export class OrderController {
         });
     }
 
+    @Get("delivery/tracking/:id")
+    @Roles(UserRole.BUYER, UserRole.DRIVER, UserRole.ADMIN)
+    @ApiOperation({ summary: "Get current live tracking info and coordinates for delivery" })
+    async getDeliveryTrackingSnapshot(
+        @Param("id") id: string,
+        @Req() req: Request,
+    ) {
+        const user = req.user as UserPayload;
+        const result = await this.orderService.getDeliveryTrackingSnapshot(id, user);
+        return ResponseService.formatResponse({
+            statusCode: HttpStatus.OK,
+            message: result.message,
+            data: result.data,
+        });
+    }
+
+    @Post("delivery/tracking/start")
+    @Roles(UserRole.DRIVER)
+    @ApiOperation({ summary: "Start live tracking session for delivery" })
+    async startDeliveryTracking(
+        @Body() payload: StartTrackingDto,
+        @Req() req: Request,
+    ) {
+        const user = req.user as UserPayload;
+        const result = await this.orderService.startDeliveryTracking(payload, user);
+        return ResponseService.formatResponse({
+            statusCode: HttpStatus.OK,
+            message: result.message,
+            data: result.data,
+        });
+    }
+
+    @Post("delivery/tracking/stop")
+    @Roles(UserRole.DRIVER, UserRole.ADMIN)
+    @ApiOperation({ summary: "Stop live tracking session for delivery" })
+    async stopDeliveryTracking(
+        @Body() payload: StopTrackingDto,
+        @Req() req: Request,
+    ) {
+        const user = req.user as UserPayload;
+        const result = await this.orderService.stopDeliveryTracking(payload, user);
+        return ResponseService.formatResponse({
+            statusCode: HttpStatus.OK,
+            message: result.message,
+            data: result.data,
+        });
+    }
 }
+

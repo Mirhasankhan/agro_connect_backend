@@ -1,6 +1,1579 @@
 {
   "openapi": "3.0.0",
   "paths": {
+    "/admin/all-producers": {
+      "get": {
+        "operationId": "AdminController_allProducers",
+        "parameters": [
+          {
+            "name": "producerType",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "Private",
+                "Company"
+              ]
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "order",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "verificationStatus",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "Pending",
+                "Accepted",
+                "Rejected"
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {},
+        "summary": "All producers",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
+        ]
+      }
+    },
+    "/admin/producer-details/{id}": {
+      "get": {
+        "operationId": "AdminController_producerDetails",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {},
+        "summary": "Producer details",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
+        ]
+      }
+    },
+    "/admin/producer-approval": {
+      "patch": {
+        "operationId": "AdminController_acceptRejectProducerAccount",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcceptRejectAccountDto"
+              }
+            }
+          }
+        },
+        "responses": {},
+        "summary": "Accept/reject producer account",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
+        ]
+      }
+    },
+    "/admin/all-drivers": {
+      "get": {
+        "operationId": "AdminController_allDrivers",
+        "parameters": [
+          {
+            "name": "vehicleType",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "BIKE",
+                "MOTORCYCLE",
+                "THREE_WHEELER",
+                "VAN",
+                "TRUCK",
+                "PICKUP"
+              ]
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "order",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "verificationStatus",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "Pending",
+                "Accepted",
+                "Rejected"
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {},
+        "summary": "All drivers",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
+        ]
+      }
+    },
+    "/admin/driver-details/{id}": {
+      "get": {
+        "operationId": "AdminController_driverDetails",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {},
+        "summary": "Driver details",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
+        ]
+      }
+    },
+    "/admin/driver-approval": {
+      "patch": {
+        "operationId": "AdminController_acceptRejectDriverAccount",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcceptRejectAccountDto"
+              }
+            }
+          }
+        },
+        "responses": {},
+        "summary": "Accept/reject driver account",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
+        ]
+      }
+    },
+    "/admin/all-buyers": {
+      "get": {
+        "operationId": "AdminController_allBuyers",
+        "parameters": [
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "order",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "verificationStatus",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "Pending",
+                "Accepted",
+                "Rejected"
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {},
+        "summary": "All buyers",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
+        ]
+      }
+    },
+    "/admin/buyer-details/{id}": {
+      "get": {
+        "operationId": "AdminController_buyerDetails",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {},
+        "summary": "Buyer details",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
+        ]
+      }
+    },
+    "/admin/create-category": {
+      "post": {
+        "operationId": "AdminController_createNewCategory",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CategoryDto"
+              }
+            }
+          }
+        },
+        "responses": {},
+        "summary": "Create new category",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
+        ]
+      }
+    },
+    "/admin/all-categories": {
+      "get": {
+        "operationId": "AdminController_allCategories",
+        "parameters": [],
+        "responses": {},
+        "summary": "All categories",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
+        ]
+      }
+    },
+    "/admin/toggle-category-status/{id}": {
+      "patch": {
+        "operationId": "AdminController_toggleCategoryStatus",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {},
+        "summary": "Toggle category status",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
+        ]
+      }
+    },
+    "/admin/toggle-product-featured/{id}": {
+      "patch": {
+        "operationId": "AdminController_toggleProductFeatured",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {},
+        "summary": "Toggle product featured status",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
+        ]
+      }
+    },
+    "/admin/all-orders": {
+      "get": {
+        "operationId": "AdminController_allOrders",
+        "parameters": [
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "Pending",
+                "Active",
+                "PartiallyCancelled",
+                "Shipped",
+                "Delivered",
+                "Cancelled",
+                "Refunded"
+              ]
+            }
+          },
+          {
+            "name": "paymentStatus",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "Pending",
+                "Refunded",
+                "Paid",
+                "Failed",
+                "PartiallyRefunded"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {},
+        "summary": "All orders",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
+        ]
+      }
+    },
+    "/admin/order-details/{id}": {
+      "get": {
+        "operationId": "AdminController_orderDetails",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {},
+        "summary": "Order details",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
+        ]
+      }
+    },
+    "/admin/assign-driver": {
+      "post": {
+        "operationId": "AdminController_assignDriverToDelivery",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignDriverDto"
+              }
+            }
+          }
+        },
+        "responses": {},
+        "summary": "Assign driver to delivery",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
+        ]
+      }
+    },
+    "/admin/all-producer-earnings": {
+      "get": {
+        "operationId": "AdminController_allProducerEarnings",
+        "parameters": [
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "isTransferred",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          },
+          {
+            "name": "order",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {},
+        "summary": "All producer earnings",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
+        ]
+      }
+    },
+    "/admin/all-driver-earnings": {
+      "get": {
+        "operationId": "AdminController_allDriverEarnings",
+        "parameters": [
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "isTransferred",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          },
+          {
+            "name": "order",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {},
+        "summary": "All driver earnings",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
+        ]
+      }
+    },
+    "/admin/transfer-producer-earning/{id}": {
+      "post": {
+        "operationId": "AdminController_transferProducerEarning",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {},
+        "summary": "Transfer producer earning manually",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
+        ]
+      }
+    },
+    "/admin/transfer-driver-earning/{id}": {
+      "post": {
+        "operationId": "AdminController_transferDriverEarning",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {},
+        "summary": "Transfer driver earning manually",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
+        ]
+      }
+    },
+    "/admin/all-reports": {
+      "get": {
+        "operationId": "AdminController_allReports",
+        "parameters": [
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "Pending",
+                "Rejected",
+                "Resolved"
+              ]
+            }
+          },
+          {
+            "name": "order",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {},
+        "summary": "All reported orders and customer disputes",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
+        ]
+      }
+    },
+    "/admin/report-details/{id}": {
+      "get": {
+        "operationId": "AdminController_reportDetails",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {},
+        "summary": "Report details",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
+        ]
+      }
+    },
+    "/admin/resolve-report/{id}": {
+      "patch": {
+        "operationId": "AdminController_resolveReport",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResolveReportDto"
+              }
+            }
+          }
+        },
+        "responses": {},
+        "summary": "Resolve or reject report dispute",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
+        ]
+      }
+    },
+    "/notification/unread-count": {
+      "get": {
+        "operationId": "NotificationController_unreadCount",
+        "parameters": [],
+        "responses": {},
+        "summary": "Get unread notifications count for a specific user",
+        "tags": [
+          "Notification"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
+        ]
+      }
+    },
+    "/notification/user-wise": {
+      "get": {
+        "operationId": "NotificationController_notifications",
+        "parameters": [
+          {
+            "name": "notificationType",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "Profile",
+                "Order",
+                "Payment",
+                "Delivery",
+                "Payout",
+                "Review"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {},
+        "summary": "Get notifications for a specific user",
+        "tags": [
+          "Notification"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
+        ]
+      }
+    },
+    "/product/create": {
+      "post": {
+        "operationId": "ProductController_createNewCategory",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductDto"
+              }
+            }
+          }
+        },
+        "responses": {},
+        "summary": "Create new product",
+        "tags": [
+          "Product"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
+        ]
+      }
+    },
+    "/product/all": {
+      "get": {
+        "operationId": "ProductController_getAllProducts",
+        "parameters": [
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "categoryId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sellingUnit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "KG",
+                "GRAM",
+                "PIECE",
+                "DOZEN",
+                "LITER",
+                "BAG",
+                "BUNDLE"
+              ]
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "active",
+                "outOfStock"
+              ]
+            }
+          },
+          {
+            "name": "minPrice",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "maxPrice",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "pricePerUnit",
+                "availableQuantity",
+                "avgRating",
+                "createdAt"
+              ]
+            }
+          },
+          {
+            "name": "order",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ]
+            }
+          },
+          {
+            "name": "isFeatured",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {},
+        "summary": "Get all products",
+        "tags": [
+          "Product"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
+        ]
+      }
+    },
+    "/product/producer-wise": {
+      "get": {
+        "operationId": "ProductController_getAllProductsByProducer",
+        "parameters": [
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "categoryId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sellingUnit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "KG",
+                "GRAM",
+                "PIECE",
+                "DOZEN",
+                "LITER",
+                "BAG",
+                "BUNDLE"
+              ]
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "active",
+                "outOfStock"
+              ]
+            }
+          },
+          {
+            "name": "minPrice",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "maxPrice",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "pricePerUnit",
+                "availableQuantity",
+                "avgRating",
+                "createdAt"
+              ]
+            }
+          },
+          {
+            "name": "order",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ]
+            }
+          },
+          {
+            "name": "isFeatured",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {},
+        "summary": "Get all products by producer",
+        "tags": [
+          "Product"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
+        ]
+      }
+    },
+    "/product/details/{id}": {
+      "get": {
+        "operationId": "ProductController_getProductDetails",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {},
+        "summary": "Get product details by ID",
+        "tags": [
+          "Product"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
+        ]
+      }
+    },
+    "/product/add-pricing-tier": {
+      "post": {
+        "operationId": "ProductController_addNewPricingTier",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PricingTierDto"
+              }
+            }
+          }
+        },
+        "responses": {},
+        "summary": "Add new pricing tier for a product",
+        "tags": [
+          "Product"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
+        ]
+      }
+    },
+    "/product/update": {
+      "put": {
+        "operationId": "ProductController_updateProduct",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProductDto"
+              }
+            }
+          }
+        },
+        "responses": {},
+        "summary": "Update product details",
+        "tags": [
+          "Product"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
+        ]
+      }
+    },
+    "/product/update-images": {
+      "put": {
+        "operationId": "ProductController_updateProductImages",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProductImagesDto"
+              }
+            }
+          }
+        },
+        "responses": {},
+        "summary": "Update product images",
+        "tags": [
+          "Product"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
+        ]
+      }
+    },
+    "/product/producer-info/{id}": {
+      "get": {
+        "operationId": "ProductController_getFarmInfo",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {},
+        "summary": "Get producer info by ID",
+        "tags": [
+          "Product"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
+        ]
+      }
+    },
+    "/feedback/submit-report": {
+      "post": {
+        "operationId": "FeedbackController_submitReport",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateReportDto"
+              }
+            }
+          }
+        },
+        "responses": {},
+        "summary": "Report an order item",
+        "tags": [
+          "Feedback"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
+        ]
+      }
+    },
+    "/feedback/submit-review": {
+      "post": {
+        "operationId": "FeedbackController_submitReview",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateReviewDto"
+              }
+            }
+          }
+        },
+        "responses": {},
+        "summary": "Submit Review to an Order Item",
+        "tags": [
+          "Feedback"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
+        ]
+      }
+    },
+    "/payment/producer-wise": {
+      "get": {
+        "operationId": "PaymentController_producersEarnings",
+        "parameters": [
+          {
+            "name": "isTransferred",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {},
+        "summary": "Get producer wise payments",
+        "tags": [
+          "Payment"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
+        ]
+      }
+    },
+    "/payment/driver-wise": {
+      "get": {
+        "operationId": "PaymentController_driverEarnings",
+        "parameters": [
+          {
+            "name": "isTransferred",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {},
+        "summary": "Get driver wise payments",
+        "tags": [
+          "Payment"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
+        ]
+      }
+    },
+    "/payment/producer-earning-chart": {
+      "get": {
+        "operationId": "PaymentController_producerEarningChart",
+        "parameters": [
+          {
+            "name": "type",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {},
+        "summary": "Get producer earning chart",
+        "tags": [
+          "Payment"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
+        ]
+      }
+    },
+    "/payment/driver-earning-chart": {
+      "get": {
+        "operationId": "PaymentController_driverEarningChart",
+        "parameters": [
+          {
+            "name": "type",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {},
+        "summary": "Get driver earning chart",
+        "tags": [
+          "Payment"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
+        ]
+      }
+    },
+    "/payment/stripe-account-status": {
+      "get": {
+        "operationId": "PaymentController_getStripeAccountStatus",
+        "parameters": [],
+        "responses": {},
+        "summary": "Check if producer or driver Stripe account is connected and enabled",
+        "tags": [
+          "Payment"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
+        ]
+      }
+    },
+    "/payment/connect-stripe": {
+      "post": {
+        "operationId": "PaymentController_connectStripe",
+        "parameters": [],
+        "responses": {},
+        "summary": "Connect with Stripe or complete Stripe onboarding",
+        "tags": [
+          "Payment"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
+        ]
+      }
+    },
+    "/conversations": {
+      "get": {
+        "operationId": "SocketController_getConversations",
+        "parameters": [],
+        "responses": {},
+        "tags": [
+          "Socket"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
+        ]
+      }
+    },
     "/auth/register": {
       "post": {
         "operationId": "AuthController_register",
@@ -19,12 +1592,43 @@
         "summary": "Register User",
         "tags": [
           "Auth"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
+        ]
+      }
+    },
+    "/auth/verify-registration": {
+      "post": {
+        "operationId": "AuthController_verifyRegistration",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyRegistrationDto"
+              }
+            }
+          }
+        },
+        "responses": {},
+        "summary": "Verify Registration",
+        "tags": [
+          "Auth"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
         ]
       }
     },
     "/auth/login": {
       "post": {
-        "operationId": "AuthController_signIn",
+        "operationId": "AuthController_loginWithEmail",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -40,48 +1644,37 @@
         "summary": "Login User",
         "tags": [
           "Auth"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
         ]
       }
     },
-    "/auth/send-otp": {
+    "/auth/admin-login": {
       "post": {
-        "operationId": "AuthController_resendOTP",
+        "operationId": "AuthController_adminLogin",
         "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ResendOtpDto"
+                "$ref": "#/components/schemas/LoginUserDto"
               }
             }
           }
         },
         "responses": {},
-        "summary": "Resend OTP",
+        "summary": "Login Admin",
         "tags": [
           "Auth"
-        ]
-      }
-    },
-    "/auth/verify-otp": {
-      "post": {
-        "operationId": "AuthController_verifyOTP",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/VerifyOtpDto"
-              }
-            }
+        ],
+        "security": [
+          {
+            "accessToken": []
           }
-        },
-        "responses": {},
-        "summary": "Verify OTP",
-        "tags": [
-          "Auth"
         ]
       }
     },
@@ -100,15 +1693,20 @@
           }
         },
         "responses": {},
-        "summary": "Send Forgot Password OTP",
+        "summary": "Forgot Password OTP",
         "tags": [
           "Auth"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
         ]
       }
     },
     "/auth/verify-otp/password-reset": {
       "post": {
-        "operationId": "AuthController_verifyForgotPasswordOTP",
+        "operationId": "AuthController_verifyOTP",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -121,51 +1719,14 @@
           }
         },
         "responses": {},
-        "summary": "Verify Forgot Password OTP",
+        "summary": "Verify OTP",
         "tags": [
           "Auth"
-        ]
-      }
-    },
-    "/auth/change-password": {
-      "post": {
-        "operationId": "AuthController_changePassword",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ChangePasswordDto"
-              }
-            }
+        ],
+        "security": [
+          {
+            "accessToken": []
           }
-        },
-        "responses": {},
-        "summary": "Change Password",
-        "tags": [
-          "Auth"
-        ]
-      }
-    },
-    "/auth/forgot-password": {
-      "post": {
-        "operationId": "AuthController_forgotPassword",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ForgotPasswordDto"
-              }
-            }
-          }
-        },
-        "responses": {},
-        "summary": "Forgot Password",
-        "tags": [
-          "Auth"
         ]
       }
     },
@@ -187,6 +1748,37 @@
         "summary": "Reset Password",
         "tags": [
           "Auth"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
+        ]
+      }
+    },
+    "/auth/change-password": {
+      "post": {
+        "operationId": "AuthController_changePassword",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordDto"
+              }
+            }
+          }
+        },
+        "responses": {},
+        "summary": "Change Password",
+        "tags": [
+          "Auth"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
         ]
       }
     },
@@ -208,42 +1800,843 @@
         "summary": "Refresh Access Token",
         "tags": [
           "Auth"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
         ]
       }
     },
-    "/profile": {
-      "get": {
-        "operationId": "ProfileController_getProfile",
-        "parameters": [],
-        "responses": {},
-        "summary": "Get user profile",
-        "tags": [
-          "Profile"
-        ]
-      },
-      "patch": {
-        "operationId": "ProfileController_updateProfile",
+    "/auth/create-producer-profile": {
+      "post": {
+        "operationId": "AuthController_createProducerProfile",
         "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateProfileDto"
+                "$ref": "#/components/schemas/CreateProducerProfileDto"
               }
             }
           }
         },
         "responses": {},
-        "summary": "Update user profile",
+        "summary": "Create Producer Profile",
         "tags": [
-          "Profile"
+          "Auth"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
+        ]
+      }
+    },
+    "/auth/create-driver-profile": {
+      "post": {
+        "operationId": "AuthController_createDriverProfile",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDriverProfileDto"
+              }
+            }
+          }
+        },
+        "responses": {},
+        "summary": "Create Driver Profile",
+        "tags": [
+          "Auth"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
+        ]
+      }
+    },
+    "/auth/update-profile": {
+      "put": {
+        "operationId": "AuthController_updateUserProfile",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/updateUserDto"
+              }
+            }
+          }
+        },
+        "responses": {},
+        "summary": "Update user Profile",
+        "tags": [
+          "Auth"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
+        ]
+      }
+    },
+    "/auth/profile": {
+      "get": {
+        "operationId": "AuthController_getUserProfile",
+        "parameters": [],
+        "responses": {},
+        "summary": "Get user Profile",
+        "tags": [
+          "Auth"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
+        ]
+      }
+    },
+    "/auth/availability": {
+      "patch": {
+        "operationId": "AuthController_toggleDriverAvailability",
+        "parameters": [],
+        "responses": {},
+        "summary": "Toggle Driver Availability",
+        "tags": [
+          "Auth"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
+        ]
+      }
+    },
+    "/order/create": {
+      "post": {
+        "operationId": "OrderController_createOrder",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateOrderDto"
+              }
+            }
+          }
+        },
+        "responses": {},
+        "summary": "Create a new order",
+        "tags": [
+          "Order"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
+        ]
+      }
+    },
+    "/order/user-wise": {
+      "get": {
+        "operationId": "OrderController_getUserOrders",
+        "parameters": [
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "Pending",
+                "Active",
+                "PartiallyCancelled",
+                "Shipped",
+                "Delivered",
+                "Cancelled",
+                "Refunded"
+              ]
+            }
+          },
+          {
+            "name": "paymentStatus",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "Pending",
+                "Refunded",
+                "Paid",
+                "Failed",
+                "PartiallyRefunded"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {},
+        "summary": "Get user's orders",
+        "tags": [
+          "Order"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
+        ]
+      }
+    },
+    "/order/producer-wise": {
+      "get": {
+        "operationId": "OrderController_getProducerWiseOrders",
+        "parameters": [
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "Pending",
+                "Active",
+                "PartiallyCancelled",
+                "Shipped",
+                "Delivered",
+                "Cancelled",
+                "Refunded"
+              ]
+            }
+          },
+          {
+            "name": "paymentStatus",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "Pending",
+                "Refunded",
+                "Paid",
+                "Failed",
+                "PartiallyRefunded"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {},
+        "summary": "Get producer's orders",
+        "tags": [
+          "Order"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
+        ]
+      }
+    },
+    "/order/item/details/{id}": {
+      "get": {
+        "operationId": "OrderController_getOrderItemDetailsForProducer",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {},
+        "summary": "Get order item details for producer",
+        "tags": [
+          "Order"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
+        ]
+      }
+    },
+    "/order/producer/reports": {
+      "get": {
+        "operationId": "OrderController_getProducerReports",
+        "parameters": [
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "Pending",
+                "Rejected",
+                "Resolved"
+              ]
+            }
+          },
+          {
+            "name": "order",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {},
+        "summary": "Get producer's reported items",
+        "tags": [
+          "Order"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
+        ]
+      }
+    },
+    "/order/details/{id}": {
+      "get": {
+        "operationId": "OrderController_getOrderById",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {},
+        "summary": "Get order by ID",
+        "tags": [
+          "Order"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
+        ]
+      }
+    },
+    "/order/delivery/update-status": {
+      "put": {
+        "operationId": "OrderController_markDeliveryAsPickedUpOrCanceled",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeliveryDto"
+              }
+            }
+          }
+        },
+        "responses": {},
+        "summary": "Mark delivery as picked up or canceled",
+        "tags": [
+          "Order"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
+        ]
+      }
+    },
+    "/order/mark-sent-to-hub/{id}": {
+      "patch": {
+        "operationId": "OrderController_markSentToHub",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {},
+        "summary": "Mark order item as sent to hub",
+        "tags": [
+          "Order"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
+        ]
+      }
+    },
+    "/order/delivery-driver-wise": {
+      "get": {
+        "operationId": "OrderController_getDriverWiseDeliveries",
+        "parameters": [],
+        "responses": {},
+        "summary": "Get driver's deliveries",
+        "tags": [
+          "Order"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
+        ]
+      }
+    },
+    "/order/delivery/details/{id}": {
+      "get": {
+        "operationId": "OrderController_getDriverDeliveryDetails",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {},
+        "summary": "Get driver's delivery details",
+        "tags": [
+          "Order"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
+        ]
+      }
+    },
+    "/order/send-completion-otp/{id}": {
+      "patch": {
+        "operationId": "OrderController_sendDeliveryCompletionOtp",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {},
+        "summary": "Send delivery completion OTP",
+        "tags": [
+          "Order"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
+        ]
+      }
+    },
+    "/order/verify-completion-otp": {
+      "post": {
+        "operationId": "OrderController_verifyDeliveryCompletionOtp",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmDeliveryDto"
+              }
+            }
+          }
+        },
+        "responses": {},
+        "summary": "Verify delivery completion OTP",
+        "tags": [
+          "Order"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
+        ]
+      }
+    },
+    "/order/delivery/tracking/{id}": {
+      "get": {
+        "operationId": "OrderController_getDeliveryTrackingSnapshot",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {},
+        "summary": "Get current live tracking info and coordinates for delivery",
+        "tags": [
+          "Order"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
+        ]
+      }
+    },
+    "/order/delivery/tracking/start": {
+      "post": {
+        "operationId": "OrderController_startDeliveryTracking",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartTrackingDto"
+              }
+            }
+          }
+        },
+        "responses": {},
+        "summary": "Start live tracking session for delivery",
+        "tags": [
+          "Order"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
+        ]
+      }
+    },
+    "/order/delivery/tracking/stop": {
+      "post": {
+        "operationId": "OrderController_stopDeliveryTracking",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StopTrackingDto"
+              }
+            }
+          }
+        },
+        "responses": {},
+        "summary": "Stop live tracking session for delivery",
+        "tags": [
+          "Order"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
+        ]
+      }
+    },
+    "/webhook/stripe": {
+      "post": {
+        "operationId": "StripeWebhookController_handleStripeWebhook",
+        "parameters": [],
+        "responses": {},
+        "summary": "Handle Stripe checkout webhook events",
+        "tags": [
+          "Stripe Webhook"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
+        ]
+      }
+    },
+    "/shopping/add-cart": {
+      "post": {
+        "operationId": "ShoppingController_addProductToCart",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CartDto"
+              }
+            }
+          }
+        },
+        "responses": {},
+        "summary": "Add Product to Cart",
+        "tags": [
+          "Shopping"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
+        ]
+      }
+    },
+    "/shopping/cart": {
+      "get": {
+        "operationId": "ShoppingController_getUserCartItems",
+        "parameters": [],
+        "responses": {},
+        "summary": "Get User Cart Items",
+        "tags": [
+          "Shopping"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
+        ]
+      }
+    },
+    "/shopping/update-cart": {
+      "patch": {
+        "operationId": "ShoppingController_updateCartItemQuantity",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCartDto"
+              }
+            }
+          }
+        },
+        "responses": {},
+        "summary": "Update Cart Item Quantity",
+        "tags": [
+          "Shopping"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
+        ]
+      }
+    },
+    "/shopping/remove-cart/{id}": {
+      "delete": {
+        "operationId": "ShoppingController_removeProductFromCart",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {},
+        "summary": "Remove Product from Cart",
+        "tags": [
+          "Shopping"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
+        ]
+      }
+    },
+    "/shopping/add-wishlist/{id}": {
+      "post": {
+        "operationId": "ShoppingController_addRemoveProductToWishlist",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {},
+        "summary": "Add or Remove Product to Wishlist",
+        "tags": [
+          "Shopping"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
+        ]
+      }
+    },
+    "/shopping/wishlist": {
+      "get": {
+        "operationId": "ShoppingController_getUserWishlistItems",
+        "parameters": [],
+        "responses": {},
+        "summary": "Get User Wishlist Items",
+        "tags": [
+          "Shopping"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
+        ]
+      }
+    },
+    "/shopping/top-rated-producers": {
+      "get": {
+        "operationId": "ShoppingController_getTopRatedProducers",
+        "parameters": [],
+        "responses": {},
+        "summary": "Get top-rated producers",
+        "tags": [
+          "Shopping"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
+        ]
+      }
+    },
+    "/shipping-address/create": {
+      "post": {
+        "operationId": "ShippingAddressController_createShippingAddress",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShippingAddressDto"
+              }
+            }
+          }
+        },
+        "responses": {},
+        "summary": "Create Shipping Address",
+        "tags": [
+          "Shipping Address"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
+        ]
+      }
+    },
+    "/shipping-address": {
+      "get": {
+        "operationId": "ShippingAddressController_getShippingAddresses",
+        "parameters": [],
+        "responses": {},
+        "summary": "Get Shipping Address",
+        "tags": [
+          "Shipping Address"
+        ],
+        "security": [
+          {
+            "accessToken": []
+          }
         ]
       }
     }
   },
   "info": {
-    "title": "Argo Connect Backend",
+    "title": "Argo Connect Server API",
     "description": "The API Description for NestJS Backend Starter Pack",
     "version": "1.0",
     "contact": {}
@@ -257,33 +2650,302 @@
         "bearerFormat": "JWT",
         "type": "http",
         "name": "Authorization",
-        "description": "Enter JWT token",
+        "description": "JWT Access Token",
         "in": "header"
       }
     },
     "schemas": {
-      "RegisterUserDto": {
+      "AcceptRejectAccountDto": {
+        "type": "object",
+        "properties": {
+          "accountId": {
+            "type": "string"
+          },
+          "isAccept": {
+            "type": "boolean"
+          },
+          "rejectReason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "accountId",
+          "isAccept"
+        ]
+      },
+      "CategoryDto": {
         "type": "object",
         "properties": {
           "name": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "slug",
+          "description"
+        ]
+      },
+      "AssignDriverDto": {
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "type": "string"
+          },
+          "driverId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "orderId",
+          "driverId"
+        ]
+      },
+      "ResolveReportDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "Pending",
+              "Rejected",
+              "Resolved"
+            ]
+          },
+          "adminComment": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "PricingTierDto": {
+        "type": "object",
+        "properties": {
+          "productId": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "number",
+            "minimum": 2
+          },
+          "pricePerUnit": {
+            "type": "number",
+            "minimum": 1
+          }
+        },
+        "required": [
+          "quantity",
+          "pricePerUnit"
+        ]
+      },
+      "ProductDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "categoryId": {
+            "type": "string"
+          },
+          "sellingUnit": {
+            "type": "string",
+            "enum": [
+              "KG",
+              "GRAM",
+              "PIECE",
+              "DOZEN",
+              "LITER",
+              "BAG",
+              "BUNDLE"
+            ]
+          },
+          "isFeatured": {
+            "type": "boolean"
+          },
+          "pricePerUnit": {
+            "type": "number",
+            "minimum": 1
+          },
+          "availableQuantity": {
+            "type": "number",
+            "minimum": 1
+          },
+          "pricingTiers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PricingTierDto"
+            }
+          }
+        },
+        "required": [
+          "name",
+          "description",
+          "categoryId",
+          "sellingUnit",
+          "pricePerUnit",
+          "availableQuantity",
+          "pricingTiers"
+        ]
+      },
+      "UpdateProductDto": {
+        "type": "object",
+        "properties": {
+          "productId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "categoryId": {
+            "type": "string"
+          },
+          "sellingUnit": {
+            "type": "string",
+            "enum": [
+              "KG",
+              "GRAM",
+              "PIECE",
+              "DOZEN",
+              "LITER",
+              "BAG",
+              "BUNDLE"
+            ]
+          },
+          "pricePerUnit": {
+            "type": "number",
+            "minimum": 1
+          },
+          "availableQuantity": {
+            "type": "number",
+            "minimum": 1
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "isFeatured": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "productId"
+        ]
+      },
+      "UpdateProductImagesDto": {
+        "type": "object",
+        "properties": {
+          "productId": {
+            "type": "string"
+          },
+          "keptImages": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "productId"
+        ]
+      },
+      "CreateReportDto": {
+        "type": "object",
+        "properties": {
+          "orderItemId": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "fileUrl": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "orderItemId",
+          "reason"
+        ]
+      },
+      "CreateReviewDto": {
+        "type": "object",
+        "properties": {
+          "rating": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "comment": {
+            "type": "string"
+          },
+          "orderItemId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "rating",
+          "comment",
+          "orderItemId"
+        ]
+      },
+      "RegisterUserDto": {
+        "type": "object",
+        "properties": {
+          "fullName": {
             "type": "string"
           },
           "email": {
             "type": "string",
             "format": "email"
           },
-          "phone": {
+          "password": {
             "type": "string"
           },
-          "password": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "BUYER",
+              "DRIVER",
+              "PRODUCER"
+            ]
+          }
+        },
+        "required": [
+          "fullName",
+          "email",
+          "password",
+          "role"
+        ]
+      },
+      "VerifyRegistrationDto": {
+        "type": "object",
+        "properties": {
+          "otp": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "fcmToken": {
             "type": "string"
           }
         },
         "required": [
-          "name",
-          "email",
-          "phone",
-          "password"
+          "otp",
+          "email"
         ]
       },
       "LoginUserDto": {
@@ -295,39 +2957,14 @@
           },
           "password": {
             "type": "string"
+          },
+          "fcmToken": {
+            "type": "string"
           }
         },
         "required": [
           "email",
           "password"
-        ]
-      },
-      "ResendOtpDto": {
-        "type": "object",
-        "properties": {
-          "email": {
-            "type": "string",
-            "format": "email"
-          }
-        },
-        "required": [
-          "email"
-        ]
-      },
-      "VerifyOtpDto": {
-        "type": "object",
-        "properties": {
-          "otp": {
-            "type": "string"
-          },
-          "email": {
-            "type": "string",
-            "format": "email"
-          }
-        },
-        "required": [
-          "otp",
-          "email"
         ]
       },
       "SendForgotPasswordOtpDto": {
@@ -358,6 +2995,17 @@
           "email"
         ]
       },
+      "ResetPasswordDto": {
+        "type": "object",
+        "properties": {
+          "password": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "password"
+        ]
+      },
       "ChangePasswordDto": {
         "type": "object",
         "properties": {
@@ -373,33 +3021,6 @@
           "newPassword"
         ]
       },
-      "ForgotPasswordDto": {
-        "type": "object",
-        "properties": {
-          "email": {
-            "type": "string",
-            "format": "email"
-          }
-        },
-        "required": [
-          "email"
-        ]
-      },
-      "ResetPasswordDto": {
-        "type": "object",
-        "properties": {
-          "token": {
-            "type": "string"
-          },
-          "password": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "token",
-          "password"
-        ]
-      },
       "RefreshTokenDto": {
         "type": "object",
         "properties": {
@@ -411,28 +3032,271 @@
           "refreshToken"
         ]
       },
-      "UpdateProfileDto": {
+      "CreateProducerProfileDto": {
         "type": "object",
         "properties": {
-          "name": {
+          "phoneNumber": {
             "type": "string"
           },
-          "phone": {
+          "producerType": {
+            "type": "string",
+            "enum": [
+              "Private",
+              "Company"
+            ]
+          },
+          "city": {
             "type": "string"
           },
-          "description": {
+          "region": {
             "type": "string"
           },
-          "avatar": {
+          "address": {
+            "type": "string"
+          },
+          "farmName": {
+            "type": "string"
+          },
+          "farmSize": {
+            "type": "number"
+          },
+          "farmLocation": {
+            "type": "string"
+          },
+          "companyName": {
+            "type": "string"
+          },
+          "rccmNo": {
+            "type": "string"
+          },
+          "sirenNo": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "phoneNumber",
+          "producerType",
+          "city",
+          "region",
+          "address",
+          "farmName",
+          "farmSize",
+          "farmLocation"
+        ]
+      },
+      "CreateDriverProfileDto": {
+        "type": "object",
+        "properties": {
+          "phoneNumber": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "region": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string"
+          },
+          "vehicleType": {
+            "type": "string",
+            "enum": [
+              "BIKE",
+              "MOTORCYCLE",
+              "THREE_WHEELER",
+              "VAN",
+              "TRUCK",
+              "PICKUP"
+            ]
+          },
+          "registrationNumber": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "phoneNumber",
+          "city",
+          "region",
+          "address",
+          "vehicleType",
+          "registrationNumber"
+        ]
+      },
+      "updateUserDto": {
+        "type": "object",
+        "properties": {
+          "fullName": {
+            "type": "string"
+          },
+          "phoneNumber": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "region": {
+            "type": "string"
+          },
+          "address": {
             "type": "string"
           }
         }
+      },
+      "CreateOrderDto": {
+        "type": "object",
+        "properties": {
+          "shippingAddressId": {
+            "type": "string"
+          },
+          "cartIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "shippingAddressId",
+          "cartIds"
+        ]
+      },
+      "DeliveryDto": {
+        "type": "object",
+        "properties": {
+          "deliveryId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PickedUp",
+              "Cancelled"
+            ]
+          }
+        },
+        "required": [
+          "deliveryId",
+          "status"
+        ]
+      },
+      "ConfirmDeliveryDto": {
+        "type": "object",
+        "properties": {
+          "deliveryId": {
+            "type": "string"
+          },
+          "otp": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "deliveryId",
+          "otp"
+        ]
+      },
+      "StartTrackingDto": {
+        "type": "object",
+        "properties": {
+          "deliveryId": {
+            "type": "string",
+            "description": "ID of the delivery to track"
+          },
+          "latitude": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90,
+            "description": "Current driver latitude",
+            "example": 5.36
+          },
+          "longitude": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180,
+            "description": "Current driver longitude",
+            "example": -4.008
+          },
+          "heading": {
+            "type": "number",
+            "description": "Compass heading in degrees (0-360)",
+            "example": 45
+          },
+          "speed": {
+            "type": "number",
+            "description": "Current travel speed in m/s",
+            "example": 12.5
+          }
+        },
+        "required": [
+          "deliveryId"
+        ]
+      },
+      "StopTrackingDto": {
+        "type": "object",
+        "properties": {
+          "deliveryId": {
+            "type": "string",
+            "description": "ID of the delivery to stop tracking"
+          }
+        },
+        "required": [
+          "deliveryId"
+        ]
+      },
+      "CartDto": {
+        "type": "object",
+        "properties": {
+          "productId": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "number",
+            "minimum": 1
+          }
+        },
+        "required": [
+          "productId",
+          "quantity"
+        ]
+      },
+      "UpdateCartDto": {
+        "type": "object",
+        "properties": {
+          "cartId": {
+            "type": "string"
+          },
+          "increment": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "cartId",
+          "increment"
+        ]
+      },
+      "ShippingAddressDto": {
+        "type": "object",
+        "properties": {
+          "addressLine": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "postCode": {
+            "type": "string"
+          },
+          "instruction": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "addressLine",
+          "city",
+          "postCode",
+          "instruction"
+        ]
       }
     }
-  },
-  "security": [
-    {
-      "accessToken": []
-    }
-  ]
+  }
 }
