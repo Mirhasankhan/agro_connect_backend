@@ -271,8 +271,8 @@ cp .env.example .env
 | `CLOUDINARY_API_SECRET`    | Cloudinary API secret                           | `your_api_secret`                                       |
 | `FRONTEND_URL`             | Frontend application client origin              | `http://localhost:3000`                                 |
 | `BACKEND_URL`              | Backend server URL                              | `http://localhost:5000`                                 |
-| `PAYMENT_SUCCESS_URL`      | Redirect URL after successful Stripe payment    | `http://localhost:3000/payment/success`                 |
-| `PAYMENT_FAILED_URL`       | Redirect URL after cancelled Stripe payment     | `http://localhost:3000/payment/failed`                  |
+| `PAYMENT_SUCCESS_URL`      | Redirect URL after successful Stripe payment    | `https://agro-connect-cyan.vercel.app/payment/success`                 |
+| `PAYMENT_FAILED_URL`       | Redirect URL after cancelled Stripe payment     | `https://agro-connect-cyan.vercel.app/payment/failed`                  |
 
 > [!IMPORTANT]
 > MongoDB must be run with a **replica set** enabled (e.g. `?replicaSet=rs0`) because Prisma uses transactions for multi-record operations like orders and inventory adjustments.
