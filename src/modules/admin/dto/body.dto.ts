@@ -9,6 +9,7 @@ import {
     IsBoolean,
     IsOptional,
     IsString,
+    IsNumber,
     IsMongoId,
     IsEnum,
     IsIn,
@@ -131,3 +132,34 @@ export class ResolveReportDto {
     @IsString()
     adminComment?: string;
 }
+
+export class AdminCancelOrderDto {
+    @IsString()
+    reason: string;
+
+    @IsOptional()
+    @IsIn(["FULL", "ITEMS_ONLY", "CUSTOM", "NONE"])
+    refundType?: "FULL" | "ITEMS_ONLY" | "CUSTOM" | "NONE";
+
+    @IsOptional()
+    @IsNumber()
+    customRefundAmount?: number;
+
+    @IsOptional()
+    @IsBoolean()
+    restoreInventory?: boolean;
+}
+
+export class AdminCancelOrderItemDto {
+    @IsString()
+    reason: string;
+
+    @IsOptional()
+    @IsNumber()
+    refundAmount?: number;
+
+    @IsOptional()
+    @IsBoolean()
+    restoreInventory?: boolean;
+}
+

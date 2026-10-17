@@ -12,6 +12,8 @@ import {
     EarningQueryDto,
     ReportQueryDto,
     ResolveReportDto,
+    AdminCancelOrderDto,
+    AdminCancelOrderItemDto,
 } from "./dto/body.dto";
 import { ApiError } from "@/common/errors/api_error";
 import { FileService } from "@/core/services/files/cloudinary.service";
@@ -689,13 +691,14 @@ export class AdminService {
             );
         }
 
+        const nonCancelledItems = order.items.filter((item) => item.status !== "Cancelled");
         if (
-            order.items.length === 0 ||
-            order.items.some((item) => item.status !== "SentToHub")
+            nonCancelledItems.length === 0 ||
+            nonCancelledItems.some((item) => item.status !== "SentToHub")
         ) {
             throw new ApiError(
                 HttpStatus.BAD_REQUEST,
-                "All order items must arrive at the hub before assigning a driver",
+                "All active order items must arrive at the hub before assigning a driver",
             );
         }
 
@@ -1522,4 +1525,262 @@ export class AdminService {
             throw new ApiError(HttpStatus.BAD_REQUEST, "Invalid report status");
         }
     }
+
+    async adminCancelOrder(orderId: string, payload: AdminCancelOrderDto) {
+        const order = await this.prisma.order.findUnique({
+            where: { id: orderId },
+            include: {
+                deliveries: true,
+                items: {
+                    include: {
+                        product: {
+                            select: {
+                                id: true,
+                                name: true,
+                                producerId: true,
+                            },
+                        },
+                    },
+                },
+            },
+        });
+
+        if (!order) {
+            throw new ApiError(HttpStatus.NOT_FOUND, "Order not found");
+        }
+
+        if (order.status === "Cancelled" || order.status === "Refunded") {
+            throw new ApiError(HttpStatus.BAD_REQUEST, "Order is already cancelled or refunded");
+        }
+
+        if (order.status === "Delivered") {
+            throw new ApiError(
+                HttpStatus.BAD_REQUEST,
+                "Delivered order cannot be cancelled directly. Please use the Report/Dispute resolution workflow.",
+            );
+        }
+
+        const activeItems = order.items.filter((item) => item.status !== "Cancelled");
+
+        let refundAmount = 0;
+        const refundType = payload.refundType || "FULL";
+        if (refundType === "FULL") {
+            refundAmount = order.totalAmount;
+        } else if (refundType === "ITEMS_ONLY") {
+            refundAmount = activeItems.reduce((acc, it) => acc + it.subtotal, 0);
+        } else if (refundType === "CUSTOM") {
+            refundAmount = payload.customRefundAmount || 0;
+        } else if (refundType === "NONE") {
+            refundAmount = 0;
+        }
+
+        if (
+            refundAmount > 0 &&
+            (order.paymentStatus === "Paid" || order.paymentStatus === "PartiallyRefunded") &&
+            order.stripePaymentIntentId
+        ) {
+            try {
+                await this.stripe.refundPaymentIntent(
+                    order.stripePaymentIntentId,
+                    `admin-cancel-order-${order.id}-${Date.now()}`,
+                    refundAmount,
+                );
+            } catch (stripeErr) {
+                console.error("Stripe refund error during admin cancel order:", stripeErr);
+                throw new ApiError(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Failed to process refund with payment gateway. Please verify Stripe status.",
+                );
+            }
+        }
+
+        await this.prisma.$transaction(async (tx) => {
+            if (payload.restoreInventory !== false) {
+                for (const item of activeItems) {
+                    await tx.product.update({
+                        where: { id: item.productId },
+                        data: {
+                            availableQuantity: {
+                                increment: item.quantity,
+                            },
+                        },
+                    });
+                }
+            }
+
+            if (order.deliveries && order.deliveries.length > 0) {
+                for (const delivery of order.deliveries) {
+                    await tx.driverProfile.updateMany({
+                        where: { userId: delivery.driverId },
+                        data: { isAvailable: true },
+                    });
+                }
+                await tx.delivery.deleteMany({
+                    where: { orderId: order.id },
+                });
+            }
+
+            await tx.order.update({
+                where: { id: order.id },
+                data: {
+                    status: "Cancelled",
+                    paymentStatus: refundAmount > 0 ? "Refunded" : order.paymentStatus,
+                    cancelReason: `Admin cancelled: ${payload.reason}`,
+                },
+            });
+
+            await tx.orderItem.updateMany({
+                where: {
+                    orderId: order.id,
+                    status: { not: "Cancelled" },
+                },
+                data: {
+                    status: "Cancelled",
+                    cancelReason: `Admin cancelled: ${payload.reason}`,
+                },
+            });
+        });
+
+        background.add(async () => {
+            await this.notificationService.createNotification({
+                receiverId: order.customerId,
+                title: "Order Cancelled by Admin",
+                content: `Your order #${order.orderId} was cancelled by administration (${payload.reason}). ${refundAmount > 0 ? `A refund of $${refundAmount} has been processed.` : ""}`,
+                notificationType: "Order",
+            });
+
+            const producerIds = Array.from(new Set(activeItems.map((it) => it.product.producerId)));
+            for (const producerId of producerIds) {
+                await this.notificationService.createNotification({
+                    receiverId: producerId,
+                    title: "Order Cancelled by Admin",
+                    content: `Order #${order.orderId} was cancelled by administration (${payload.reason}).`,
+                    notificationType: "Order",
+                });
+            }
+
+            if (order.deliveries && order.deliveries.length > 0) {
+                for (const delivery of order.deliveries) {
+                    await this.notificationService.createNotification({
+                        receiverId: delivery.driverId,
+                        title: "Delivery Assignment Cancelled",
+                        content: `Order #${order.orderId} was cancelled by administration. You are now available for other deliveries.`,
+                        notificationType: "Delivery",
+                    });
+                }
+            }
+        });
+
+        return {
+            message: `Order #${order.orderId} cancelled successfully by admin. ${refundAmount > 0 ? `Refund of $${refundAmount} issued.` : ""}`,
+        };
+    }
+
+    async adminCancelOrderItem(orderItemId: string, payload: AdminCancelOrderItemDto) {
+        const item = await this.prisma.orderItem.findUnique({
+            where: { id: orderItemId },
+            include: {
+                product: {
+                    select: {
+                        id: true,
+                        name: true,
+                        producerId: true,
+                    },
+                },
+                order: {
+                    include: {
+                        items: true,
+                    },
+                },
+            },
+        });
+
+        if (!item) {
+            throw new ApiError(HttpStatus.NOT_FOUND, "Order item not found");
+        }
+
+        if (item.status === "Cancelled" || item.status === "Refunded") {
+            throw new ApiError(HttpStatus.BAD_REQUEST, "Item is already cancelled or refunded");
+        }
+
+        const remainingActiveItems = item.order.items.filter(
+            (it) => it.id !== item.id && it.status !== "Cancelled",
+        );
+        const isLastItem = remainingActiveItems.length === 0;
+
+        const refundAmount = payload.refundAmount !== undefined
+            ? payload.refundAmount
+            : (isLastItem ? Math.round((item.subtotal + (item.order.deliveryCharge || 50)) * 100) / 100 : item.subtotal);
+
+        if (
+            refundAmount > 0 &&
+            (item.order.paymentStatus === "Paid" || item.order.paymentStatus === "PartiallyRefunded") &&
+            item.order.stripePaymentIntentId
+        ) {
+            try {
+                await this.stripe.refundPaymentIntent(
+                    item.order.stripePaymentIntentId,
+                    `admin-cancel-item-${item.id}-${Date.now()}`,
+                    refundAmount,
+                );
+            } catch (stripeErr) {
+                console.error("Stripe refund error during admin cancel item:", stripeErr);
+                throw new ApiError(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Failed to process refund with payment gateway.",
+                );
+            }
+        }
+
+        await this.prisma.$transaction(async (tx) => {
+            if (payload.restoreInventory) {
+                await tx.product.update({
+                    where: { id: item.productId },
+                    data: {
+                        availableQuantity: {
+                            increment: item.quantity,
+                        },
+                    },
+                });
+            }
+
+            await tx.orderItem.update({
+                where: { id: item.id },
+                data: {
+                    status: "Cancelled",
+                    cancelReason: `Admin cancelled: ${payload.reason}`,
+                },
+            });
+
+            await tx.order.update({
+                where: { id: item.orderId },
+                data: {
+                    status: isLastItem ? "Cancelled" : "PartiallyCancelled",
+                    paymentStatus: isLastItem ? "Refunded" : "PartiallyRefunded",
+                    ...(isLastItem ? { cancelReason: `Admin cancelled: ${payload.reason}` } : {}),
+                },
+            });
+        });
+
+        background.add(async () => {
+            await this.notificationService.createNotification({
+                receiverId: item.order.customerId,
+                title: "Item Cancelled by Admin",
+                content: `Item "${item.productName}" from order #${item.order.orderId} was cancelled by administration (${payload.reason}). ${refundAmount > 0 ? `Refund of $${refundAmount} has been processed.` : ""}`,
+                notificationType: "Order",
+            });
+
+            await this.notificationService.createNotification({
+                receiverId: item.product.producerId,
+                title: "Order Item Cancelled by Admin",
+                content: `Item "${item.productName}" in order #${item.order.orderId} was cancelled by administration (${payload.reason}).`,
+                notificationType: "Order",
+            });
+        });
+
+        return {
+            message: `Item "${item.productName}" cancelled successfully by admin`,
+        };
+    }
 }
+

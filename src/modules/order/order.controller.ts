@@ -17,7 +17,15 @@ import { ResponseService } from "@/common/interceptors/response";
 import { Roles } from "@/common/decorators/roles.decorator";
 import { UserRole } from "@prisma/client";
 import { OrderService } from "./order.service";
-import { ConfirmDeliveryDto, CreateOrderDto, DeliveryDto, OrderQueryDto } from "./dto/body.dto";
+import {
+    ConfirmDeliveryDto,
+    CreateOrderDto,
+    DeliveryDto,
+    OrderQueryDto,
+    BuyerCancelOrderDto,
+    BuyerCancelOrderItemDto,
+    ProducerCancelOrderItemDto,
+} from "./dto/body.dto";
 import { ReportQueryDto } from "../admin/dto/body.dto";
 import { StartTrackingDto, StopTrackingDto } from "./dto/tracking.dto";
 
@@ -245,5 +253,54 @@ export class OrderController {
             data: result.data,
         });
     }
+
+    @Patch("buyer/cancel/:id")
+    @Roles(UserRole.BUYER)
+    @ApiOperation({ summary: "Cancel order by buyer" })
+    async buyerCancelOrder(
+        @Param("id") id: string,
+        @Body() payload: BuyerCancelOrderDto,
+        @Req() req: Request,
+    ) {
+        const user = req.user as UserPayload;
+        const result = await this.orderService.buyerCancelOrder(user, id, payload);
+        return ResponseService.formatResponse({
+            statusCode: HttpStatus.OK,
+            message: result.message,
+        });
+    }
+
+    @Patch("buyer/cancel-item/:id")
+    @Roles(UserRole.BUYER)
+    @ApiOperation({ summary: "Cancel single order item by buyer" })
+    async buyerCancelOrderItem(
+        @Param("id") id: string,
+        @Body() payload: BuyerCancelOrderItemDto,
+        @Req() req: Request,
+    ) {
+        const user = req.user as UserPayload;
+        const result = await this.orderService.buyerCancelOrderItem(user, id, payload);
+        return ResponseService.formatResponse({
+            statusCode: HttpStatus.OK,
+            message: result.message,
+        });
+    }
+
+    @Patch("producer/cancel-item/:id")
+    @Roles(UserRole.PRODUCER)
+    @ApiOperation({ summary: "Cancel single order item by producer" })
+    async producerCancelOrderItem(
+        @Param("id") id: string,
+        @Body() payload: ProducerCancelOrderItemDto,
+        @Req() req: Request,
+    ) {
+        const user = req.user as UserPayload;
+        const result = await this.orderService.producerCancelOrderItem(user, id, payload);
+        return ResponseService.formatResponse({
+            statusCode: HttpStatus.OK,
+            message: result.message,
+        });
+    }
 }
+
 

@@ -25,6 +25,8 @@ import {
     EarningQueryDto,
     ReportQueryDto,
     ResolveReportDto,
+    AdminCancelOrderDto,
+    AdminCancelOrderItemDto,
 } from "./dto/body.dto";
 import { CustomFileInterceptor } from "@/common/interceptors/file_interceptors";
 import { ParseFormDataInterceptor } from "@/common/interceptors/form_data_interceptor";
@@ -331,4 +333,35 @@ export class AdminController {
             message: result.message,
         });
     }
+
+    @Patch("cancel-order/:id")
+    @ApiOperation({ summary: "Cancel order by admin with optional refund and inventory restoration" })
+    @Roles(UserRole.ADMIN)
+    async cancelOrder(
+        @Param("id") id: string,
+        @Body() payload: AdminCancelOrderDto,
+    ) {
+        const result = await this.adminService.adminCancelOrder(id, payload);
+
+        return ResponseService.formatResponse({
+            statusCode: HttpStatus.OK,
+            message: result.message,
+        });
+    }
+
+    @Patch("cancel-order-item/:id")
+    @ApiOperation({ summary: "Cancel order item by admin with optional refund and inventory restoration" })
+    @Roles(UserRole.ADMIN)
+    async cancelOrderItem(
+        @Param("id") id: string,
+        @Body() payload: AdminCancelOrderItemDto,
+    ) {
+        const result = await this.adminService.adminCancelOrderItem(id, payload);
+
+        return ResponseService.formatResponse({
+            statusCode: HttpStatus.OK,
+            message: result.message,
+        });
+    }
 }
+

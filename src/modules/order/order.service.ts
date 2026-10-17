@@ -7,6 +7,9 @@ import {
     CreateOrderDto,
     DeliveryDto,
     OrderQueryDto,
+    BuyerCancelOrderDto,
+    BuyerCancelOrderItemDto,
+    ProducerCancelOrderItemDto,
 } from "./dto/body.dto";
 import { ReportQueryDto } from "../admin/dto/body.dto";
 import { ApiError } from "@/common/errors/api_error";
@@ -801,11 +804,21 @@ export class OrderService {
                 message: "Delivery marked as picked up successfully",
             };
         } else if (payload.status === "Cancelled") {
-            await this.prisma.delivery.delete({
-                where: {
-                    id: payload.deliveryId,
-                },
-            });
+            await this.prisma.$transaction([
+                this.prisma.delivery.delete({
+                    where: {
+                        id: payload.deliveryId,
+                    },
+                }),
+                this.prisma.driverProfile.updateMany({
+                    where: {
+                        userId: user.id,
+                    },
+                    data: {
+                        isAvailable: true,
+                    },
+                }),
+            ]);
 
             this.websocketGateway.notifyDeliveryStatusChanged(payload.deliveryId, "Cancelled", false);
 
@@ -1181,4 +1194,379 @@ export class OrderService {
             },
         });
     }
+
+    async buyerCancelOrder(
+        user: UserPayload,
+        orderId: string,
+        payload: BuyerCancelOrderDto,
+    ) {
+        const order = await this.prisma.order.findUnique({
+            where: {
+                id: orderId,
+                customerId: user.id,
+            },
+            include: {
+                items: {
+                    include: {
+                        product: {
+                            select: {
+                                id: true,
+                                name: true,
+                                producerId: true,
+                            },
+                        },
+                    },
+                },
+            },
+        });
+
+        if (!order) {
+            throw new ApiError(HttpStatus.NOT_FOUND, "Order not found");
+        }
+
+        if (order.status === "Cancelled" || order.status === "Refunded") {
+            throw new ApiError(HttpStatus.BAD_REQUEST, "Order is already cancelled or refunded");
+        }
+
+        if (order.status === "Delivered") {
+            throw new ApiError(
+                HttpStatus.BAD_REQUEST,
+                "Delivered orders cannot be cancelled. You may submit a quality dispute within 24 hours.",
+            );
+        }
+
+        if (order.status === "Shipped") {
+            throw new ApiError(
+                HttpStatus.BAD_REQUEST,
+                "Order is already out for delivery and cannot be cancelled.",
+            );
+        }
+
+        // Check if any active item has already been sent to hub
+        const sentToHubItem = order.items.find(
+            (item) => item.status === "SentToHub" || item.status === "Delivered",
+        );
+        if (sentToHubItem) {
+            throw new ApiError(
+                HttpStatus.BAD_REQUEST,
+                `Cannot cancel order because "${sentToHubItem.productName}" has already arrived at the aggregation hub. Please contact support.`,
+            );
+        }
+
+        const activeItems = order.items.filter((item) => item.status !== "Cancelled");
+        if (activeItems.length === 0) {
+            throw new ApiError(HttpStatus.BAD_REQUEST, "All items in this order are already cancelled");
+        }
+
+        // If paid via Stripe, process refund
+        if (
+            (order.paymentStatus === "Paid" || order.paymentStatus === "PartiallyRefunded") &&
+            order.stripePaymentIntentId
+        ) {
+            try {
+                await this.stripe.refundPaymentIntent(
+                    order.stripePaymentIntentId,
+                    `buyer-cancel-order-${order.id}-${Date.now()}`,
+                );
+            } catch (stripeErr) {
+                console.error("Stripe refund error during buyer cancel order:", stripeErr);
+                throw new ApiError(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Failed to process refund with payment gateway. Please try again or contact support.",
+                );
+            }
+        }
+
+        await this.prisma.$transaction(async (tx) => {
+            // Restore inventory for active items
+            for (const item of activeItems) {
+                await tx.product.update({
+                    where: { id: item.productId },
+                    data: {
+                        availableQuantity: {
+                            increment: item.quantity,
+                        },
+                    },
+                });
+            }
+
+            // Update order
+            await tx.order.update({
+                where: { id: order.id },
+                data: {
+                    status: "Cancelled",
+                    paymentStatus: order.paymentStatus === "Paid" || order.paymentStatus === "PartiallyRefunded" ? "Refunded" : order.paymentStatus,
+                    cancelReason: payload.reason,
+                },
+            });
+
+            // Update all active items
+            await tx.orderItem.updateMany({
+                where: {
+                    orderId: order.id,
+                    status: { not: "Cancelled" },
+                },
+                data: {
+                    status: "Cancelled",
+                    cancelReason: payload.reason,
+                },
+            });
+        });
+
+        // Notifications
+        background.add(async () => {
+            await this.notificationService.createNotification({
+                receiverId: user.id,
+                title: "Order Cancelled",
+                content: `Your order #${order.orderId} has been successfully cancelled. ${order.paymentStatus === "Paid" || order.paymentStatus === "PartiallyRefunded" ? "Your full refund has been issued." : ""}`,
+                notificationType: "Order",
+            });
+
+            const producerIds = Array.from(new Set(activeItems.map((it) => it.product.producerId)));
+            for (const producerId of producerIds) {
+                await this.notificationService.createNotification({
+                    receiverId: producerId,
+                    title: "Order Item Cancelled by Buyer",
+                    content: `An item in order #${order.orderId} was cancelled by the buyer. Reserved inventory has been restored.`,
+                    notificationType: "Order",
+                });
+            }
+        });
+
+        return {
+            message: "Order cancelled and refund processed successfully",
+        };
+    }
+
+    async buyerCancelOrderItem(
+        user: UserPayload,
+        orderItemId: string,
+        payload: BuyerCancelOrderItemDto,
+    ) {
+        const item = await this.prisma.orderItem.findUnique({
+            where: { id: orderItemId },
+            include: {
+                product: {
+                    select: {
+                        id: true,
+                        name: true,
+                        producerId: true,
+                    },
+                },
+                order: {
+                    include: {
+                        items: true,
+                    },
+                },
+            },
+        });
+
+        if (!item || item.order.customerId !== user.id) {
+            throw new ApiError(HttpStatus.NOT_FOUND, "Order item not found");
+        }
+
+        if (item.status === "Cancelled" || item.status === "Refunded") {
+            throw new ApiError(HttpStatus.BAD_REQUEST, "Item is already cancelled or refunded");
+        }
+
+        if (item.status === "SentToHub" || item.status === "Delivered") {
+            throw new ApiError(
+                HttpStatus.BAD_REQUEST,
+                `Cannot cancel "${item.productName}" because it has already reached the aggregation hub.`,
+            );
+        }
+
+        if (item.order.status === "Shipped" || item.order.status === "Delivered") {
+            throw new ApiError(
+                HttpStatus.BAD_REQUEST,
+                "Order is already shipped or delivered; individual items cannot be cancelled.",
+            );
+        }
+
+        const remainingActiveItems = item.order.items.filter(
+            (it) => it.id !== item.id && it.status !== "Cancelled",
+        );
+        const isLastItem = remainingActiveItems.length === 0;
+
+        const refundAmount = isLastItem
+            ? Math.round((item.subtotal + (item.order.deliveryCharge || 50)) * 100) / 100
+            : item.subtotal;
+
+        if (
+            (item.order.paymentStatus === "Paid" || item.order.paymentStatus === "PartiallyRefunded") &&
+            item.order.stripePaymentIntentId
+        ) {
+            try {
+                await this.stripe.refundPaymentIntent(
+                    item.order.stripePaymentIntentId,
+                    `buyer-cancel-item-${item.id}-${Date.now()}`,
+                    refundAmount,
+                );
+            } catch (stripeErr) {
+                console.error("Stripe refund error during buyer cancel item:", stripeErr);
+                throw new ApiError(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Failed to process refund with payment gateway. Please try again or contact support.",
+                );
+            }
+        }
+
+        await this.prisma.$transaction(async (tx) => {
+            await tx.product.update({
+                where: { id: item.productId },
+                data: {
+                    availableQuantity: {
+                        increment: item.quantity,
+                    },
+                },
+            });
+
+            await tx.orderItem.update({
+                where: { id: item.id },
+                data: {
+                    status: "Cancelled",
+                    cancelReason: payload.reason,
+                },
+            });
+
+            await tx.order.update({
+                where: { id: item.orderId },
+                data: {
+                    status: isLastItem ? "Cancelled" : "PartiallyCancelled",
+                    paymentStatus: isLastItem ? "Refunded" : "PartiallyRefunded",
+                    ...(isLastItem ? { cancelReason: payload.reason } : {}),
+                },
+            });
+        });
+
+        background.add(async () => {
+            await this.notificationService.createNotification({
+                receiverId: user.id,
+                title: "Item Cancelled",
+                content: `Your item "${item.productName}" from order #${item.order.orderId} has been cancelled. Refund of $${refundAmount} has been processed.`,
+                notificationType: "Order",
+            });
+
+            await this.notificationService.createNotification({
+                receiverId: item.product.producerId,
+                title: "Order Item Cancelled",
+                content: `Buyer cancelled "${item.productName}" from order #${item.order.orderId}. Inventory has been restored.`,
+                notificationType: "Order",
+            });
+        });
+
+        return {
+            message: `Item "${item.productName}" cancelled successfully`,
+        };
+    }
+
+    async producerCancelOrderItem(
+        user: UserPayload,
+        orderItemId: string,
+        payload: ProducerCancelOrderItemDto,
+    ) {
+        const item = await this.prisma.orderItem.findUnique({
+            where: { id: orderItemId },
+            include: {
+                product: {
+                    select: {
+                        id: true,
+                        name: true,
+                        producerId: true,
+                    },
+                },
+                order: {
+                    include: {
+                        items: true,
+                    },
+                },
+            },
+        });
+
+        if (!item || item.product.producerId !== user.id) {
+            throw new ApiError(
+                HttpStatus.FORBIDDEN,
+                "You do not have permission to cancel this order item",
+            );
+        }
+
+        if (item.status === "Cancelled" || item.status === "Refunded") {
+            throw new ApiError(HttpStatus.BAD_REQUEST, "Item is already cancelled or refunded");
+        }
+
+        if (item.status === "SentToHub" || item.status === "Delivered") {
+            throw new ApiError(
+                HttpStatus.BAD_REQUEST,
+                `Cannot cancel "${item.productName}" because it has already been sent to the hub or delivered.`,
+            );
+        }
+
+        const remainingActiveItems = item.order.items.filter(
+            (it) => it.id !== item.id && it.status !== "Cancelled",
+        );
+        const isLastItem = remainingActiveItems.length === 0;
+
+        const refundAmount = isLastItem
+            ? Math.round((item.subtotal + (item.order.deliveryCharge || 50)) * 100) / 100
+            : item.subtotal;
+
+        if (
+            (item.order.paymentStatus === "Paid" || item.order.paymentStatus === "PartiallyRefunded") &&
+            item.order.stripePaymentIntentId
+        ) {
+            try {
+                await this.stripe.refundPaymentIntent(
+                    item.order.stripePaymentIntentId,
+                    `producer-cancel-item-${item.id}-${Date.now()}`,
+                    refundAmount,
+                );
+            } catch (stripeErr) {
+                console.error("Stripe refund error during producer cancel item:", stripeErr);
+                throw new ApiError(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Failed to process refund with payment gateway. Please contact admin.",
+                );
+            }
+        }
+
+        await this.prisma.$transaction(async (tx) => {
+            await tx.orderItem.update({
+                where: { id: item.id },
+                data: {
+                    status: "Cancelled",
+                    cancelReason: payload.reason,
+                },
+            });
+
+            await tx.order.update({
+                where: { id: item.orderId },
+                data: {
+                    status: isLastItem ? "Cancelled" : "PartiallyCancelled",
+                    paymentStatus: isLastItem ? "Refunded" : "PartiallyRefunded",
+                    ...(isLastItem ? { cancelReason: `Producer cancelled: ${payload.reason}` } : {}),
+                },
+            });
+        });
+
+        background.add(async () => {
+            await this.notificationService.createNotification({
+                receiverId: item.order.customerId,
+                title: "Item Unavailable - Refund Issued",
+                content: `The producer was unable to fulfill "${item.productName}" in order #${item.order.orderId} (${payload.reason}). An automatic refund of $${refundAmount} has been sent to your payment method.`,
+                notificationType: "Order",
+            });
+
+            await this.notificationService.createNotification({
+                receiverId: user.id,
+                title: "Item Cancellation Confirmed",
+                content: `You cancelled item "${item.productName}" for order #${item.order.orderId}. Customer was refunded $${refundAmount}.`,
+                notificationType: "Order",
+            });
+        });
+
+        return {
+            message: `Item "${item.productName}" cancelled and customer refunded $${refundAmount} successfully`,
+        };
+    }
 }
+

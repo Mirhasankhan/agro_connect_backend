@@ -106,9 +106,18 @@ export class StripeService {
         return await this.stripe.charges.retrieve(id);
     }
 
-    async refundPaymentIntent(paymentIntentId: string, idempotencyKey: string) {
+    async refundPaymentIntent(
+        paymentIntentId: string,
+        idempotencyKey: string,
+        amount?: number,
+    ) {
         return await this.stripe.refunds.create(
-            { payment_intent: paymentIntentId },
+            {
+                payment_intent: paymentIntentId,
+                ...(amount && amount > 0
+                    ? { amount: Math.round(amount * 100) }
+                    : {}),
+            },
             { idempotencyKey },
         );
     }

@@ -52,3 +52,19 @@ export class ConfirmDeliveryDto {
     @IsString()
     otp: string;
 }
+
+export class BuyerCancelOrderDto {
+    @IsString()
+    reason: string;
+}
+
+export class BuyerCancelOrderItemDto {
+    @IsString()
+    reason: string;
+}
+
+export class ProducerCancelOrderItemDto {
+    @IsString()
+    reason: string;
+}
+
