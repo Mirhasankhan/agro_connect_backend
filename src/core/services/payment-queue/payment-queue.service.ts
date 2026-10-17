@@ -3,8 +3,8 @@ import { Injectable } from "@nestjs/common";
 import {  Queue } from "bullmq";
 
 export const EARNINGS_QUEUE = "earnings-transfers";
-// export const TRANSFER_DELAY = 24 * 60 * 60 * 1000;
-export const TRANSFER_DELAY = 2 * 60 * 1000; // 2 minutes
+export const TRANSFER_DELAY = 24 * 60 * 60 * 1000;
+// export const TRANSFER_DELAY = 2 * 60 * 1000;
 
 export type TransferJobData =
     | { type: "producer"; earningId: string }

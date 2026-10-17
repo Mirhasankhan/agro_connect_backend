@@ -210,6 +210,7 @@ export class OrderService {
 
             metadata: {
                 orderId: order.id,
+                orderCode: orderId,
                 customerId: user.id,
             },
         });
@@ -231,7 +232,7 @@ export class OrderService {
             })
             .rawFilter({
                 customerId: user.id,
-                paymentStatus: "Paid"
+                paymentStatus: { in: ["Paid", "PartiallyRefunded", "Refunded"] },
             })
             .sortBy({
                 createdAt: "desc",
@@ -291,7 +292,7 @@ export class OrderService {
                     producerId: user.id,
                 },
                 order: {
-                    paymentStatus: "Paid",
+                    paymentStatus: { in: ["Paid", "PartiallyRefunded", "Refunded"] },
                 },
             })
             .select({
@@ -789,12 +790,24 @@ export class OrderService {
         });
 
         if (payload.status === "PickedUp") {
-            await this.prisma.delivery.update({
+            const delivery = await this.prisma.delivery.update({
                 where: {
                     id: payload.deliveryId,
                 },
                 data: {
                     status: "PickedUp",
+                },
+                select: {
+                    orderId: true,
+                },
+            });
+
+            await this.prisma.order.update({
+                where: {
+                    id: delivery.orderId,
+                },
+                data: {
+                    status: "Shipped",
                 },
             });
 
@@ -903,6 +916,7 @@ export class OrderService {
                         items: {
                             select: {
                                 id: true,
+                                status: true,
                                 subtotal: true,
                                 product: {
                                     select: {
@@ -916,14 +930,21 @@ export class OrderService {
             },
         });
 
+        if (!delivery.otpHash) {
+            throw new ApiError(
+                HttpStatus.BAD_REQUEST,
+                "Delivery OTP has not been sent yet. Please tap 'Send OTP' first.",
+            );
+        }
+
         const otpMatched = await this.bcryptService.compare(
             payload.otp,
             delivery.otpHash as string,
         );
 
-        // if (!otpMatched) {
-        //     throw new ApiError(HttpStatus.FORBIDDEN, "Incorrect OTP");
-        // }
+        if (!otpMatched) {
+            throw new ApiError(HttpStatus.FORBIDDEN, "Incorrect OTP");
+        }
 
         const earnings = await this.prisma.$transaction(
             async (transaction) => {
@@ -949,7 +970,6 @@ export class OrderService {
                     transaction.order.update({
                         where: {
                             id: delivery.order.id,
-                            status: "Active",
                         },
                         data: {
                             status: "Delivered",
@@ -957,8 +977,12 @@ export class OrderService {
                     }),
                 ]);
 
+                const validItems = delivery.order.items.filter(
+                    (item) => item.status !== "Cancelled" && item.status !== "Refunded",
+                );
+
                 const producerEarnings = await Promise.all(
-                    delivery.order.items.map(async (item) => {
+                    validItems.map(async (item) => {
                         await transaction.orderItem.update({
                             where: {
                                 id: item.id,
@@ -1429,6 +1453,21 @@ export class OrderService {
                 },
             });
 
+            if (isLastItem) {
+                const deliveries = await tx.delivery.findMany({
+                    where: { orderId: item.orderId },
+                });
+                for (const del of deliveries) {
+                    await tx.driverProfile.updateMany({
+                        where: { userId: del.driverId },
+                        data: { isAvailable: true },
+                    });
+                }
+                await tx.delivery.deleteMany({
+                    where: { orderId: item.orderId },
+                });
+            }
+
             await tx.order.update({
                 where: { id: item.orderId },
                 data: {
@@ -1537,6 +1576,21 @@ export class OrderService {
                     cancelReason: payload.reason,
                 },
             });
+
+            if (isLastItem) {
+                const deliveries = await tx.delivery.findMany({
+                    where: { orderId: item.orderId },
+                });
+                for (const del of deliveries) {
+                    await tx.driverProfile.updateMany({
+                        where: { userId: del.driverId },
+                        data: { isAvailable: true },
+                    });
+                }
+                await tx.delivery.deleteMany({
+                    where: { orderId: item.orderId },
+                });
+            }
 
             await tx.order.update({
                 where: { id: item.orderId },

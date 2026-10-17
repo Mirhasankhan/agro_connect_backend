@@ -82,13 +82,20 @@ export class StripeService {
         };
         metadata: Stripe.MetadataParam;
     }) {
+        const orderRef = (metadata as any)?.orderCode || (metadata as any)?.orderId || "";
+        const baseSuccessUrl = config.url.payment_success || "";
+        const successUrl = baseSuccessUrl
+            ? (orderRef ? `${baseSuccessUrl}${baseSuccessUrl.includes("?") ? "&" : "?"}orderId=${orderRef}` : baseSuccessUrl)
+            : "";
+        const cancelUrl = config.url.payment_failed || baseSuccessUrl;
+
         return this.stripe.checkout.sessions.create({
             payment_method_types: ["card"],
             line_items: [...line_items],
             mode: "payment",
             allow_promotion_codes: true,
-            success_url: config.url.payment_success,
-            cancel_url: config.url.payment_success,
+            success_url: successUrl,
+            cancel_url: cancelUrl,
             client_reference_id: client.id,
             customer_email: client.email,
             metadata: { ...metadata },

@@ -588,10 +588,7 @@ export class AdminService {
         const response = queryBuilder
             .search(["product.name", "orderId"])
             .filter({
-                exacts: ["status"],
-            })
-            .rawFilter({
-                paymentStatus: "Paid",
+                exacts: ["status", "paymentStatus"],
             })
             .sort()
             .paginate()
@@ -647,13 +644,12 @@ export class AdminService {
             this.prisma.order.findUnique({
                 where: {
                     id: payload.orderId,
-                    status: "Active",
-                    paymentStatus: "Paid",
-
                 },
                 select: {
-                    customerId:true,
-                    orderId:true,
+                    customerId: true,
+                    orderId: true,
+                    status: true,
+                    paymentStatus: true,
                     deliveries: {
                         select: {
                             id: true,
@@ -687,7 +683,21 @@ export class AdminService {
         if (!order) {
             throw new ApiError(
                 HttpStatus.NOT_FOUND,
-                "Order not found or not eligible for delivery",
+                "Order not found",
+            );
+        }
+
+        if (order.status !== "Active" && order.status !== "PartiallyCancelled") {
+            throw new ApiError(
+                HttpStatus.BAD_REQUEST,
+                `Cannot assign driver to order with status ${order.status}`,
+            );
+        }
+
+        if (order.paymentStatus !== "Paid" && order.paymentStatus !== "PartiallyRefunded") {
+            throw new ApiError(
+                HttpStatus.BAD_REQUEST,
+                `Cannot assign driver to order with payment status ${order.paymentStatus}`,
             );
         }
 
@@ -1484,15 +1494,15 @@ export class AdminService {
                     );
                     console.log("allRefundedOrCancelled", allRefundedOrCancelled);
 
-                // await tx.order.update({
-                //     where: { id: report.orderItem.orderId },
-                //     data: {
-                //         paymentStatus: allRefundedOrCancelled
-                //             ? "Refunded"
-                //             : "PartiallyRefunded",
-                //         status: allRefundedOrCancelled ? "Refunded" : undefined,
-                //     },
-                // });
+                await tx.order.update({
+                    where: { id: report.orderItem.orderId },
+                    data: {
+                        paymentStatus: allRefundedOrCancelled
+                            ? "Refunded"
+                            : "PartiallyRefunded",
+                        status: allRefundedOrCancelled ? "Refunded" : undefined,
+                    },
+                });
             });
 
             if (report.orderItem.order.stripePaymentIntentId) {
@@ -1500,6 +1510,7 @@ export class AdminService {
                     await this.stripe.refundPaymentIntent(
                         report.orderItem.order.stripePaymentIntentId,
                         `report-refund-${report.id}`,
+                        report.orderItem.subtotal,
                     );
                 } catch (stripeErr) {
                     console.error("Warning: Stripe refund skipped or already processed:", stripeErr);

@@ -2,6 +2,7 @@ import {
     IsArray,
     IsEnum,
     IsInt,
+    IsNumber,
     IsMongoId,
     IsNotEmpty,
     IsString,
@@ -46,12 +47,12 @@ export class ProductDto {
     @IsBoolean()
     isFeatured?: boolean;
 
-    @IsInt()
-    @Min(1)
+    @IsNumber()
+    @Min(0.01)
     pricePerUnit: number;
 
-    @IsInt()
-    @Min(1)
+    @IsNumber()
+    @Min(0.01)
     availableQuantity: number;
 
     @IsOptional()
@@ -128,13 +129,13 @@ export class UpdateProductDto {
     sellingUnit?: SellingUnit;
 
     @IsOptional()
-    @IsInt()
-    @Min(1)
+    @IsNumber()
+    @Min(0.01)
     pricePerUnit?: number;
 
     @IsOptional()
-    @IsInt()
-    @Min(1)
+    @IsNumber()
+    @Min(0.01)
     availableQuantity?: number;
 
     @IsOptional()

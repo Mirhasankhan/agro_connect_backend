@@ -36,15 +36,18 @@ export class NotificationService {
             .paginate()            
             .execute();
 
-        await this.prisma.notification.updateMany({
-            where: {
-                receiverId: user.id,
-                isRead: false,
-            },
-            data: {
-                isRead: true,
-            },
-        });
+        const fetchedIds = ((response as any[]) || []).map((n) => n.id);
+        if (fetchedIds.length > 0) {
+            await this.prisma.notification.updateMany({
+                where: {
+                    id: { in: fetchedIds },
+                    isRead: false,
+                },
+                data: {
+                    isRead: true,
+                },
+            });
+        }
 
         const [notifications, pagination] = await Promise.all([
             response,

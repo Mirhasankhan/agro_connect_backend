@@ -29,8 +29,9 @@ export class ShippingAddressController {
     async createShippingAddress(@Body() payload: ShippingAddressDto, @Req() req: Request) {
         const result = await this.shippingAddressService.createShippingAddress(payload, req.user as UserPayload);
         return ResponseService.formatResponse({
-            statusCode: HttpStatus.OK,
+            statusCode: HttpStatus.CREATED,
             message: result.message,
+            data: result.data,
         });
     }
 

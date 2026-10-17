@@ -32,11 +32,24 @@ export class PaymentQueueProcessor extends WorkerHost {
             where: { id: earningId },
             include: {
                 producer: { include: { producerProfile: true } },
-                orderItem: { select: { report: { select: { id: true } } } },
+                orderItem: {
+                    select: {
+                        status: true,
+                        report: { select: { id: true, status: true } },
+                    },
+                },
             },
         });
 
-        if (!earning || earning.isTransferred || earning.orderItem.report) return;
+        if (
+            !earning ||
+            earning.isTransferred ||
+            earning.orderItem.status === "Cancelled" ||
+            earning.orderItem.status === "Refunded" ||
+            (earning.orderItem.report && earning.orderItem.report.status !== "Rejected")
+        ) {
+            return;
+        }
 
         const accountId = earning.producer.producerProfile?.stripeAccountId;
         if (!accountId) {
@@ -67,7 +80,11 @@ export class PaymentQueueProcessor extends WorkerHost {
                 driver: { include: { driverProfile: true } },
                 order: {
                     select: {
-                        items: { select: { report: { select: { id: true } } } },
+                        items: {
+                            select: {
+                                report: { select: { id: true, status: true } },
+                            },
+                        },
                     },
                 },
             },
@@ -76,7 +93,9 @@ export class PaymentQueueProcessor extends WorkerHost {
         if (
             !earning ||
             earning.isTransferred ||
-            earning.order.items.some((item) => item.report)
+            earning.order.items.some(
+                (item) => item.report && item.report.status === "Pending",
+            )
         ) {
             return;
         }

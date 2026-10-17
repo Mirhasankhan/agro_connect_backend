@@ -226,6 +226,7 @@ export class AuthService {
             data: {
                 accessToken,
                 role: userData.role,
+                isSetupCompleted: userData.isSetupCompleted,
                 isSetuCompleted: userData.isSetupCompleted,
                 user: {
                     id: userData.id,

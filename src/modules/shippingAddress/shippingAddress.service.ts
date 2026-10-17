@@ -14,7 +14,7 @@ export class ShippingAddressService {
     ) {
         const { addressLine, city, instruction, postCode } = payload;
 
-        await this.prisma.shippingAddress.create({
+        const address = await this.prisma.shippingAddress.create({
             data: {
                 userId: user.id,
                 addressLine,
@@ -25,6 +25,7 @@ export class ShippingAddressService {
         });
         return {
             message: "Shipping Address created successfully!",
+            data: address,
         };
     }
 
