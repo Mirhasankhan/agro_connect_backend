@@ -1793,5 +1793,90 @@ export class AdminService {
             message: `Item "${item.productName}" cancelled successfully by admin`,
         };
     }
-}
 
+    async getPlatformEarningSummary(type: string) {
+        if (type !== "monthly" && type !== "weekly") {
+            throw new BadRequestException(
+                "Type must be either monthly or weekly",
+            );
+        }
+
+        const now = new Date();
+        const monthNames = [
+            "Jan",
+            "Feb",
+            "Mar",
+            "Apr",
+            "May",
+            "Jun",
+            "Jul",
+            "Aug",
+            "Sep",
+            "Oct",
+            "Nov",
+            "Dec",
+        ];
+        const dayNames = ["sat", "sun", "mon", "tue", "wed", "thu", "fri"];
+        const startDate = new Date(now);
+
+        if (type === "monthly") {
+            startDate.setMonth(0, 1);
+            startDate.setHours(0, 0, 0, 0);
+        } else {
+            const daysSinceSaturday = (now.getDay() + 1) % 7;
+            startDate.setDate(now.getDate() - daysSinceSaturday);
+            startDate.setHours(0, 0, 0, 0);
+        }
+
+        const producerEarnings = await this.prisma.producerEarning.findMany({
+            where: {
+                createdAt: { gte: startDate },
+            },
+            select: {
+                createdAt: true,
+                orderItem: {
+                    select: {
+                        subtotal: true,
+                    },
+                },
+            },
+        });
+
+        const summary =
+            type === "monthly"
+                ? monthNames.map((month, index) => ({
+                      month,
+                      platformCharge: producerEarnings
+                          .filter(
+                              ({ createdAt }) =>
+                                  createdAt.getFullYear() ===
+                                      now.getFullYear() &&
+                                  createdAt.getMonth() === index,
+                          )
+                          .reduce(
+                              (total, { orderItem }) =>
+                                  total + orderItem.subtotal * 0.1,
+                              0,
+                          ),
+                  }))
+                : dayNames.map((day, index) => ({
+                      day,
+                      platformCharge: producerEarnings
+                          .filter(({ createdAt }) => {
+                              const daysSinceSaturday =
+                                  (createdAt.getDay() + 1) % 7;
+                              return daysSinceSaturday === index;
+                          })
+                          .reduce(
+                              (total, { orderItem }) =>
+                                  total + orderItem.subtotal * 0.1,
+                              0,
+                          ),
+                  }));
+
+        return {
+            message: "Platform earning summary fetched successfully",
+            data: summary,
+        };
+    }
+}

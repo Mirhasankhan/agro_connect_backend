@@ -265,6 +265,20 @@ export class AdminController {
         });
     }
 
+    @Get("platform-earning-summary")
+    @ApiOperation({ summary: "Get platform earning summary" })
+    @Roles(UserRole.ADMIN)
+    async platformEarningSummary(@Query("type") type: string) {
+        const result =
+            await this.adminService.getPlatformEarningSummary(type);
+
+        return ResponseService.formatResponse({
+            statusCode: HttpStatus.OK,
+            message: result.message,
+            data: result.data,
+        });
+    }
+
     @Post("transfer-producer-earning/:id")
     @ApiOperation({ summary: "Transfer producer earning manually" })
     @Roles(UserRole.ADMIN)
@@ -364,4 +378,3 @@ export class AdminController {
         });
     }
 }
-
