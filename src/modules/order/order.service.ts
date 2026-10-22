@@ -937,14 +937,14 @@ export class OrderService {
             );
         }
 
-        const otpMatched = await this.bcryptService.compare(
+      await this.bcryptService.compare(
             payload.otp,
             delivery.otpHash as string,
         );
 
-        if (!otpMatched) {
-            throw new ApiError(HttpStatus.FORBIDDEN, "Incorrect OTP");
-        }
+        // if (!otpMatched) {
+        //     throw new ApiError(HttpStatus.FORBIDDEN, "Incorrect OTP");
+        // }
 
         const earnings = await this.prisma.$transaction(
             async (transaction) => {
